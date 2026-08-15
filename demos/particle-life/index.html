@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Particle Life — żywy ekran</title>
+<style>
+  :root{
+    --bg:#07080c; --panel:#12141c; --edge:#232838; --ink:#e7eaf3; --dim:#8a92a8;
+    --accent:#7c8cff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font:13px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+  #stage{position:fixed;inset:0;display:block;touch-action:none;cursor:crosshair}
+
+  /* panel sterowania */
+  #hud{position:fixed;top:14px;left:14px;width:288px;max-height:calc(100vh - 28px);
+    background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(10px);
+    border:1px solid var(--edge);border-radius:14px;padding:14px 14px 8px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55);overflow:auto;transition:transform .25s ease,opacity .25s}
+  #hud.hidden{transform:translateX(-115%);opacity:0;pointer-events:none}
+  h1{font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 2px;
+    color:var(--accent);font-weight:700}
+  .sub{color:var(--dim);font-size:11px;margin:0 0 12px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0}
+  .row label{color:var(--dim);flex:0 0 auto}
+  .row output{font-variant-numeric:tabular-nums;color:var(--ink);min-width:44px;text-align:right}
+  input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;
+    background:var(--edge);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--accent);cursor:pointer;box-shadow:0 0 10px color-mix(in srgb,var(--accent) 60%,transparent)}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:var(--accent);cursor:pointer}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 6px}
+  button{font:inherit;color:var(--ink);background:#1a1e2b;border:1px solid var(--edge);
+    border-radius:9px;padding:8px 6px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent);background:#20263a}
+  button.wide{grid-column:1 / -1}
+  button.primary{background:linear-gradient(180deg,#6f7fff,#5666e6);border-color:#5666e6;color:#fff;font-weight:600}
+  .matrix{margin-top:12px}
+  .matrix canvas{width:100%;border-radius:8px;border:1px solid var(--edge);image-rendering:pixelated;background:#0b0d13}
+  .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .foot{color:var(--dim);font-size:10.5px;margin:12px 0 4px;line-height:1.6}
+  kbd{background:#0b0d13;border:1px solid var(--edge);border-bottom-width:2px;border-radius:5px;
+    padding:1px 5px;font:11px/1 ui-monospace,monospace;color:var(--ink)}
+  #fps{position:fixed;bottom:12px;right:14px;color:var(--dim);font:11px/1 ui-monospace,monospace;
+    background:color-mix(in srgb,var(--panel) 80%,transparent);border:1px solid var(--edge);
+    border-radius:8px;padding:6px 9px;pointer-events:none}
+  #tag{position:fixed;bottom:12px;left:14px;color:var(--dim);font-size:11px;pointer-events:none}
+  #tag b{color:var(--accent)}
+  .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-24px);
+    background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:9px 16px;
+    opacity:0;transition:.3s;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="hud">
+  <h1>Particle&nbsp;Life</h1>
+  <p class="sub">Emergencja z macierzy sił. Prosta reguła → żywe wzory.</p>
+
+  <div class="row"><label>Typy</label>
+    <input id="s-types" type="range" min="2" max="7" step="1"><output id="o-types"></output></div>
+  <div class="row"><label>Cząstki</label>
+    <input id="s-count" type="range" min="200" max="6000" step="100"><output id="o-count"></output></div>
+  <div class="row"><label>Zasięg</label>
+    <input id="s-rmax" type="range" min="40" max="220" step="5"><output id="o-rmax"></output></div>
+  <div class="row"><label>Siła</label>
+    <input id="s-force" type="range" min="0.1" max="4" step="0.05"><output id="o-force"></output></div>
+  <div class="row"><label>Tarcie</label>
+    <input id="s-fric" type="range" min="0.02" max="0.9" step="0.01"><output id="o-fric"></output></div>
+  <div class="row"><label>Ślad</label>
+    <input id="s-trail" type="range" min="0" max="0.5" step="0.01"><output id="o-trail"></output></div>
+
+  <div class="btns">
+    <button id="b-rand" class="primary wide">Nowy świat (macierz)</button>
+    <button id="b-sym">Symetria</button>
+    <button id="b-zero">Zeruj</button>
+    <button id="b-reset" class="wide">Rozrzuć cząstki</button>
+    <button id="b-pause">Pauza</button>
+    <button id="b-shot">Zrzut PNG</button>
+  </div>
+
+  <div class="matrix">
+    <canvas id="mtx" width="140" height="140"></canvas>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <p class="foot">
+    Klik / dotyk = wir przyciągania (Shift = odpychanie).<br>
+    <kbd>H</kbd> panel · <kbd>Spacja</kbd> pauza · <kbd>R</kbd> nowy świat ·
+    <kbd>N</kbd> rozrzuć · <kbd>S</kbd> zrzut
+  </p>
+</div>
+
+<div id="fps">— fps</div>
+<div id="tag">zbudowane dla <b>Panto</b> · Pontifex handoff</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ─────────────────────────────────────────────────────────────────────────
+   Particle Life — pojedynczy plik, zero zależności.
+   Model sił: funkcja "clusters" (Tom Mohr) — twarde odpychanie z bliska,
+   przyciąganie/odpychanie wg macierzy A[i][j] w strefie [beta, 1] zasięgu.
+   Sąsiedztwo liczone przez spatial hash (siatka o boku = rMax) → ~O(n).
+   Świat jest torusem (zawijanie krawędzi) — brak sztucznych ścian.
+   ───────────────────────────────────────────────────────────────────────── */
+
+const cv = document.getElementById('stage');
+const ctx = cv.getContext('2d', { alpha:false });
+let W = 0, H = 0, DPR = 1;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = Math.floor(innerWidth * DPR);
+  H = Math.floor(innerHeight * DPR);
+  cv.width = W; cv.height = H;
+  cv.style.width = innerWidth + 'px';
+  cv.style.height = innerHeight + 'px';
+  ctx.fillStyle = '#07080c'; ctx.fillRect(0, 0, W, H);
+}
+addEventListener('resize', resize);
+
+/* ── parametry (mapowane na suwaki) ───────────────────────────────────── */
+const P = {
+  types: 5,
+  count: 2600,
+  rMax: 130,        // zasięg oddziaływania (px logiczne)
+  force: 1.4,       // globalny mnożnik siły
+  friction: 0.16,   // "half-life" tarcia — wyższe = szybsze wytłumienie
+  trail: 0.12,      // przezroczystość zamalowania tła → długość smug
+  beta: 0.3,        // próg strefy odpychania
+};
+
+/* paleta typów — czytelna i „neonowa" na czarnym tle */
+const HUES = [190, 330, 90, 45, 265, 0, 150]; // odcienie HSL
+function typeColor(t, a=1){ return `hsla(${HUES[t%HUES.length]},85%,62%,${a})`; }
+
+/* ── stan cząstek w typed-arrays (cache-friendly) ─────────────────────── */
+let px, py, vx, vy, tp;         // pozycje, prędkości, typ
+let A;                          // macierz sił [types*types]
+
+function randMatrix(symmetric=false){
+  const n = P.types;
+  A = new Float32Array(n*n);
+  for (let i=0;i<n;i++)
+    for (let j=0;j<n;j++){
+      if (symmetric && j<i){ A[i*n+j] = A[j*n+i]; continue; }
+      A[i*n+j] = Math.random()*2 - 1;   // [-1,1]
+    }
+  drawMatrix();
+}
+function zeroMatrix(){ A = new Float32Array(P.types*P.types); drawMatrix(); }
+
+function spawn(){
+  const n = P.count;
+  px = new Float32Array(n); py = new Float32Array(n);
+  vx = new Float32Array(n); vy = new Float32Array(n);
+  tp = new Uint8Array(n);
+  for (let i=0;i<n;i++){
+    px[i] = Math.random()*W;
+    py[i] = Math.random()*H;
+    vx[i] = 0; vy[i] = 0;
+    tp[i] = (Math.random()*P.types)|0;
+  }
+}
+
+/* ── funkcja siły (znormalizowana odległość r∈[0,1]) ──────────────────── */
+function forceLaw(r, a){
+  const b = P.beta;
+  if (r < b) return r/b - 1;                       // rdzeń: zawsze odpycha
+  if (r < 1) return a * (1 - Math.abs(2*r - 1 - b)/(1 - b));
+  return 0;
+}
+
+/* ── spatial hash ─────────────────────────────────────────────────────── */
+let cols, rows, cell, head, next;
+function buildGrid(){
+  cell = P.rMax * DPR;
+  cols = Math.max(1, Math.ceil(W/cell));
+  rows = Math.max(1, Math.ceil(H/cell));
+  head = new Int32Array(cols*rows).fill(-1);
+  next = new Int32Array(px.length);
+  for (let i=0;i<px.length;i++){
+    let cx = (px[i]/cell)|0, cy = (py[i]/cell)|0;
+    if (cx<0) cx=0; else if (cx>=cols) cx=cols-1;
+    if (cy<0) cy=0; else if (cy>=rows) cy=rows-1;
+    const c = cy*cols + cx;
+    next[i] = head[c]; head[c] = i;
+  }
+}
+
+/* ── krok symulacji ───────────────────────────────────────────────────── */
+let mouse = { x:0, y:0, active:false, repel:false };
+
+function step(dt){
+  const n = px.length, R = P.rMax*DPR, R2 = R*R, nt = P.types;
+  const fricMul = Math.pow(0.5, dt / P.friction);   // wykładnicze tłumienie
+  buildGrid();
+
+  for (let i=0;i<n;i++){
+    let fx=0, fy=0;
+    const xi=px[i], yi=py[i], ti=tp[i];
+    let cx=(xi/cell)|0, cy=(yi/cell)|0;
+    if (cx<0) cx=0; else if (cx>=cols) cx=cols-1;
+    if (cy<0) cy=0; else if (cy>=rows) cy=rows-1;
+
+    for (let gy=-1; gy<=1; gy++)
+      for (let gx=-1; gx<=1; gx++){
+        let ax=cx+gx, ay=cy+gy;
+        // zawijanie siatki (torus)
+        if (ax<0) ax=cols-1; else if (ax>=cols) ax=0;
+        if (ay<0) ay=rows-1; else if (ay>=rows) ay=0;
+        for (let j=head[ay*cols+ax]; j!==-1; j=next[j]){
+          if (j===i) continue;
+          let dx=px[j]-xi, dy=py[j]-yi;
+          // minimalny obraz na torusie
+          if (dx> W*0.5) dx-=W; else if (dx< -W*0.5) dx+=W;
+          if (dy> H*0.5) dy-=H; else if (dy< -H*0.5) dy+=H;
+          const d2=dx*dx+dy*dy;
+          if (d2>R2 || d2===0) continue;
+          const d=Math.sqrt(d2);
+          const f=forceLaw(d/R, A[ti*nt+tp[j]]);
+          fx += (dx/d)*f; fy += (dy/d)*f;
+        }
+      }
+
+    // interakcja myszą/dotykiem — wir siły
+    if (mouse.active){
+      let dx=mouse.x-xi, dy=mouse.y-yi;
+      const d2=dx*dx+dy*dy, mr=(180*DPR);
+      if (d2 < mr*mr && d2>1){
+        const d=Math.sqrt(d2), s=(1-d/mr)*(mouse.repel?-1:1)*6;
+        fx += (dx/d)*s; fy += (dy/d)*s;
+      }
+    }
+
+    // integracja: siła → prędkość (skalowana zasięgiem i mnożnikiem)
+    vx[i] = (vx[i] + fx*R*P.force*dt) * fricMul;
+    vy[i] = (vy[i] + fy*R*P.force*dt) * fricMul;
+  }
+
+  // pozycje + zawijanie
+  for (let i=0;i<n;i++){
+    let x=px[i]+vx[i]*dt, y=py[i]+vy[i]*dt;
+    if (x<0) x+=W; else if (x>=W) x-=W;
+    if (y<0) y+=H; else if (y>=H) y-=H;
+    px[i]=x; py[i]=y;
+  }
+}
+
+/* ── render ───────────────────────────────────────────────────────────── */
+function render(){
+  // smugi: półprzezroczyste zamalowanie zamiast czyszczenia
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = `rgba(7,8,12,${Math.max(0.06, 1 - P.trail)})`;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.globalCompositeOperation = 'lighter';   // addytywna poświata
+  const r = Math.max(1.4, 1.7*DPR);
+  // grupuj po typie → mniej zmian fillStyle
+  for (let t=0;t<P.types;t++){
+    ctx.fillStyle = typeColor(t, 0.95);
+    ctx.beginPath();
+    for (let i=0;i<px.length;i++){
+      if (tp[i]!==t) continue;
+      ctx.moveTo(px[i]+r, py[i]);
+      ctx.arc(px[i], py[i], r, 0, 6.2832);
+    }
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ── pętla ────────────────────────────────────────────────────────────── */
+let paused=false, last=performance.now(), fpsT=0, fpsN=0;
+function loop(now){
+  const raw=(now-last)/1000; last=now;
+  const dt=Math.min(raw, 0.033);   // clamp — stabilność po zawieszeniu karty
+  if (!paused){ step(dt*60); render(); }  // dt*60 → jednostki „na klatkę @60fps"
+  fpsN++; fpsT+=raw;
+  if (fpsT>=0.5){ fps.textContent = Math.round(fpsN/fpsT)+' fps · '+px.length+' cząstek';
+    fpsN=0; fpsT=0; }
+  requestAnimationFrame(loop);
+}
+
+/* ── podgląd macierzy (heatmapa) ──────────────────────────────────────── */
+const mtx = document.getElementById('mtx');
+function drawMatrix(){
+  const n=P.types, g=mtx.getContext('2d'), S=140, c=S/n;
+  mtx.width=S; mtx.height=S;
+  g.clearRect(0,0,S,S);
+  for (let i=0;i<n;i++)
+    for (let j=0;j<n;j++){
+      const v=A[i*n+j];                 // -1..1
+      // czerwień = odpychanie, zieleń = przyciąganie
+      const rr = v<0 ? 220 : Math.round(60*(1-v));
+      const gg = v>0 ? 210 : Math.round(60*(1+v));
+      g.fillStyle = `rgb(${rr},${gg},70)`;
+      g.globalAlpha = 0.35 + 0.65*Math.abs(v);
+      g.fillRect(j*c, i*c, c-1, c-1);
+    }
+  g.globalAlpha=1;
+  // ramki wierszy w kolorze typu-obserwatora (i)
+  for (let i=0;i<n;i++){
+    g.fillStyle = typeColor(i);
+    g.fillRect(0, i*c, 3, c-1);
+  }
+  buildLegend();
+}
+function buildLegend(){
+  const L=document.getElementById('legend'); L.innerHTML='';
+  for (let t=0;t<P.types;t++){
+    const c=document.createElement('span'); c.className='chip';
+    c.innerHTML=`<span class="dot" style="background:${typeColor(t)}"></span>${t+1}`;
+    L.appendChild(c);
+  }
+}
+// klik w macierz → ręczna edycja komórki (cykl −1 → 0 → 1)
+mtx.addEventListener('click', e=>{
+  const n=P.types, rect=mtx.getBoundingClientRect();
+  const j=Math.min(n-1,(e.offsetX/rect.width*n)|0);
+  const i=Math.min(n-1,(e.offsetY/rect.height*n)|0);
+  const cur=A[i*n+j];
+  A[i*n+j] = cur < -0.33 ? 0 : cur < 0.33 ? 1 : -1;
+  drawMatrix();
+});
+
+/* ── UI ───────────────────────────────────────────────────────────────── */
+const hud=document.getElementById('hud'), fps=document.getElementById('fps');
+const toastEl=document.getElementById('toast');
+function toast(m){ toastEl.textContent=m; toastEl.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.classList.remove('show'),1300); }
+
+function bind(id, key, fmt, after){
+  const s=document.getElementById('s-'+id), o=document.getElementById('o-'+id);
+  s.value = P[key];
+  o.textContent = fmt(P[key]);
+  s.addEventListener('input', ()=>{
+    P[key] = parseFloat(s.value);
+    o.textContent = fmt(P[key]);
+    if (after) after();
+  });
+}
+bind('types','types', v=>v|0, ()=>{ randMatrix(); spawn(); toast(P.types+' typów'); });
+bind('count','count', v=>(v|0), ()=>spawn());
+bind('rmax','rMax', v=>(v|0)+'px');
+bind('force','force', v=>v.toFixed(2));
+bind('fric','friction', v=>v.toFixed(2));
+bind('trail','trail', v=>v.toFixed(2));
+
+document.getElementById('b-rand').onclick =()=>{ randMatrix(); toast('nowy świat'); };
+document.getElementById('b-sym').onclick  =()=>{ randMatrix(true); toast('macierz symetryczna'); };
+document.getElementById('b-zero').onclick =()=>{ zeroMatrix(); toast('macierz wyzerowana'); };
+document.getElementById('b-reset').onclick=()=>{ spawn(); toast('rozrzucono'); };
+document.getElementById('b-pause').onclick=()=>{ paused=!paused; toast(paused?'pauza':'gra'); };
+document.getElementById('b-shot').onclick =shot;
+
+function shot(){
+  const a=document.createElement('a');
+  a.download='particle-life.png';
+  a.href=cv.toDataURL('image/png'); a.click(); toast('zapisano PNG');
+}
+
+/* wskaźnik: mysz + dotyk */
+function ptr(e, active){
+  const t=e.touches ? e.touches[0] : e;
+  if (t){ mouse.x=t.clientX*DPR; mouse.y=t.clientY*DPR; }
+  mouse.active=active; mouse.repel=!!e.shiftKey;
+}
+cv.addEventListener('mousedown', e=>ptr(e,true));
+cv.addEventListener('mousemove', e=>{ if(mouse.active) ptr(e,true); });
+addEventListener('mouseup',   ()=>mouse.active=false);
+cv.addEventListener('touchstart', e=>{ptr(e,true); e.preventDefault();}, {passive:false});
+cv.addEventListener('touchmove',  e=>{ptr(e,true); e.preventDefault();}, {passive:false});
+addEventListener('touchend', ()=>mouse.active=false);
+
+addEventListener('keydown', e=>{
+  const k=e.key.toLowerCase();
+  if (k==='h') hud.classList.toggle('hidden');
+  else if (k===' '){ paused=!paused; toast(paused?'pauza':'gra'); e.preventDefault(); }
+  else if (k==='r'){ randMatrix(); toast('nowy świat'); }
+  else if (k==='n'){ spawn(); toast('rozrzucono'); }
+  else if (k==='s'){ shot(); }
+});
+
+/* ── start ────────────────────────────────────────────────────────────── */
+resize();
+randMatrix();
+spawn();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

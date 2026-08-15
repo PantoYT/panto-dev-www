@@ -1,0 +1,1419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>regexplode — watch a regex engine think (and explode)</title>
+<style>
+:root{
+  --bg:#0c0e12; --panel:#12151b; --panel2:#171b22; --line:#242a34;
+  --ink:#e7ebf2; --dim:#8d97a8; --dimmer:#5c6675;
+  --char:#6cc4ff; --split:#ffb454; --save:#7ee787; --match:#f2cc60;
+  --assert:#c39bff; --guard:#8d97a8; --hot:#ff6b6b; --cool:#4ec9b0;
+  --mono:"JetBrains Mono","Cascadia Code","SF Mono",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--mono);
+  font-size:13px; line-height:1.45; display:flex; flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+header{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel);
+}
+header h1{margin:0;font-size:21px;letter-spacing:-.5px;font-weight:700}
+header h1 b{color:var(--hot);font-weight:600}
+header .tag{color:var(--dim);font-size:12px}
+header .spacer{flex:1}
+header a{color:var(--dimmer);text-decoration:none;font-size:11px}
+header a:hover{color:var(--ink)}
+
+.inputs{padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+.row{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.row label{color:var(--dim);width:58px;flex:none;text-align:right;font-size:12px}
+.row input[type=text]{
+  flex:1;min-width:200px;background:var(--bg);border:1px solid var(--line);
+  border-radius:5px;padding:7px 10px;outline:none;font-size:14px;
+}
+.row input[type=text]:focus{border-color:var(--char)}
+#pat{color:var(--char)}
+#err{color:var(--hot);min-height:17px;font-size:12px;padding-left:68px}
+.presets{display:flex;gap:6px;flex-wrap:wrap;padding-left:68px}
+.presets button{
+  background:var(--panel2);border:1px solid var(--line);border-radius:99px;
+  padding:3px 10px;font-size:11px;color:var(--dim);cursor:pointer
+}
+.presets button:hover{color:var(--ink);border-color:var(--dimmer)}
+.presets button.boom{color:var(--hot);border-color:#3a2226}
+
+main{flex:1;display:flex;min-height:0}
+.left{flex:1;display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+.right{width:400px;flex:none;display:flex;flex-direction:column;min-width:0;background:var(--panel)}
+
+.bar{
+  display:flex;align-items:center;gap:12px;padding:8px 14px;
+  border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap
+}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:5px 11px;cursor:pointer;color:var(--dim);font-size:12px}
+.seg button.on{background:var(--char);color:#04121c;font-weight:600}
+.stat{color:var(--dim);font-size:12px}
+/* The step counters are the headline of the whole page — let them read as such. */
+.stat b{color:var(--ink);font-weight:700;font-size:16px;letter-spacing:-.3px}
+.stat.hot b{color:var(--hot)}
+.stat.cool b{color:var(--cool)}
+
+#graphwrap{flex:1;min-height:0;position:relative;overflow:hidden;background:
+  radial-gradient(circle at 1px 1px, #1b202880 1px, transparent 0) 0 0/22px 22px, var(--bg);
+  cursor:grab}
+#graphwrap.drag{cursor:grabbing}
+#graph{width:100%;height:100%;display:block}
+.hint{position:absolute;right:10px;bottom:8px;color:var(--dimmer);font-size:11px;pointer-events:none}
+
+.node rect{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+.node text{font-family:var(--mono);font-size:11px;fill:var(--ink);dominant-baseline:middle;text-anchor:middle}
+.node.char rect{stroke:var(--char)} .node.char text{fill:var(--char)}
+.node.split rect{stroke:var(--split)} .node.split text{fill:var(--split)}
+.node.save rect{stroke:var(--save)} .node.save text{fill:var(--save)}
+.node.match rect{stroke:var(--match);fill:#1e1a10} .node.match text{fill:var(--match)}
+.node.assert rect{stroke:var(--assert)} .node.assert text{fill:var(--assert)}
+.node.jmp rect,.node.guard rect{stroke:#2c333f} .node.jmp text,.node.guard text{fill:var(--dimmer)}
+.node.active rect{fill:#2b3646;stroke:#fff;stroke-width:2.5}
+.node.active text{fill:#fff}
+.node.failed rect{fill:#3a1d20;stroke:var(--hot);stroke-width:2.5}
+.node.failed text{fill:#ffd0d0}
+.node .pc{font-size:8.5px;fill:var(--dimmer)}
+.edge{fill:none;stroke:#39424f;stroke-width:1.4;marker-end:url(#arrow)}
+.edge.alt{stroke-dasharray:3 3;stroke:#5b4a2e}
+.edge.back{stroke:#4a3a55}
+
+#strip{
+  padding:10px 14px;border-top:1px solid var(--line);background:var(--panel);
+  overflow-x:auto;white-space:nowrap;min-height:64px
+}
+.cell{
+  display:inline-block;position:relative;min-width:20px;text-align:center;
+  padding:5px 3px;margin-right:1px;border-radius:4px;background:var(--panel2);
+  border:1px solid transparent;font-size:14px
+}
+.cell.inmatch{background:#20321f;border-color:#2f5c2c}
+.cell.sp{border-color:#fff;background:#2b3646}
+.cell .idx{display:block;font-size:9px;color:var(--dimmer);margin-top:2px}
+.caret{display:inline-block;width:2px;height:26px;background:#fff;vertical-align:-6px;margin:0 -1px;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:.25}}
+.grouptag{display:inline-block;font-size:10px;color:var(--save);margin-right:8px}
+#capline{padding:0 14px 8px;background:var(--panel);color:var(--dim);font-size:11px;white-space:nowrap;overflow-x:auto}
+
+.transport{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--line);background:var(--panel)}
+.transport button{
+  background:var(--panel2);border:1px solid var(--line);border-radius:5px;
+  width:32px;height:28px;cursor:pointer;color:var(--ink)
+}
+.transport button:hover{border-color:var(--dimmer)}
+.transport input[type=range]{flex:1;min-width:80px;accent-color:var(--char)}
+.transport .cnt{color:var(--dim);font-size:11px;min-width:110px;text-align:right}
+
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel2)}
+.tabs button{
+  flex:1;background:transparent;border:0;border-bottom:2px solid transparent;
+  padding:9px 4px;cursor:pointer;color:var(--dim);font-size:11.5px
+}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--char);background:var(--panel)}
+.panels{flex:1;overflow:auto;padding:12px 14px}
+.panel{display:none} .panel.on{display:block}
+h3{margin:0 0 8px;font-size:11px;letter-spacing:1.2px;color:var(--dim);text-transform:uppercase;font-weight:600}
+h3:not(:first-child){margin-top:20px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dotted #1e232c}
+.kv span:first-child{color:var(--dim)}
+.kv b{font-weight:600}
+pre{margin:0;font-size:11.5px;line-height:1.6;white-space:pre}
+.listing{font-size:11.5px;line-height:1.55}
+.listing div{padding:1px 5px;border-radius:3px;white-space:pre}
+.listing div.cur{background:#2b3646;outline:1px solid #4a5768}
+.listing .n{color:var(--dimmer)}
+.op-char{color:var(--char)} .op-split{color:var(--split)} .op-save{color:var(--save)}
+.op-match{color:var(--match)} .op-assert{color:var(--assert)} .op-jmp,.op-guard{color:var(--dimmer)}
+.threads{font-size:11px;color:var(--dim);line-height:1.7;word-break:break-all}
+.threads b{color:var(--char);font-weight:400}
+
+.lab label{display:block;color:var(--dim);font-size:11px;margin:8px 0 3px}
+.lab input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:6px 8px;outline:none}
+.lab input:focus{border-color:var(--char)}
+.lab .go{
+  margin-top:12px;width:100%;background:#3a1d20;border:1px solid var(--hot);color:#ffb3b3;
+  border-radius:6px;padding:9px;cursor:pointer;font-weight:600;letter-spacing:.5px
+}
+.lab .go:hover{background:#4a2428}
+.lab .go[disabled]{opacity:.5;cursor:default}
+#chart{width:100%;height:230px;margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.chart-ax{stroke:#2b323d;stroke-width:1}
+.chart-grid{stroke:#1c212a;stroke-width:1}
+.chart-lbl{fill:var(--dimmer);font-size:9px;font-family:var(--mono)}
+.chart-bt{fill:none;stroke:var(--hot);stroke-width:2}
+.chart-pk{fill:none;stroke:var(--cool);stroke-width:2}
+.chart-cap{stroke:#4a3a3a;stroke-dasharray:4 4;stroke-width:1}
+#verdict{margin-top:10px;font-size:12px;line-height:1.6}
+#verdict .big{font-size:15px;color:var(--hot);font-weight:600}
+
+table.tests{width:100%;border-collapse:collapse;font-size:11px}
+table.tests td{padding:2px 4px;border-bottom:1px dotted #1e232c;vertical-align:top}
+table.tests td.p{color:var(--cool);width:16px}
+table.tests td.f{color:var(--hot);width:16px}
+table.tests td.exp{color:var(--dim);white-space:pre-wrap}
+.docs{font-size:12px;line-height:1.7;color:#c3cad6}
+.docs code{background:var(--panel2);padding:1px 5px;border-radius:3px;color:var(--char)}
+.docs p{margin:0 0 10px}
+.docs ul{margin:0 0 10px;padding-left:18px}
+.docs li{margin-bottom:3px}
+.docs .warn{border-left:2px solid var(--split);padding-left:10px;color:var(--dim)}
+
+@media (max-width:980px){
+  main{flex-direction:column} .right{width:auto;border-top:1px solid var(--line)}
+  .left{border-right:0} #graphwrap{min-height:280px} .panels{max-height:420px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>regex<b>explode</b></h1>
+  <span class="tag">a regex engine, built from scratch, running in slow motion</span>
+  <span class="spacer"></span>
+  <a href="#" id="helplink">what am I looking at?</a>
+</header>
+
+<section class="inputs">
+  <div class="row">
+    <label for="pat">pattern</label>
+    <input id="pat" type="text" spellcheck="false" value="(a+)+b">
+  </div>
+  <div class="row">
+    <label for="str">input</label>
+    <input id="str" type="text" spellcheck="false" value="aaaaaaaaaaaaaaaaaaaa!">
+  </div>
+  <div id="err"></div>
+  <div class="presets" id="presets"></div>
+</section>
+
+<main>
+  <div class="left">
+    <div class="bar">
+      <div class="seg" id="engsel">
+        <button data-eng="bt" class="on">backtracking</button>
+        <button data-eng="pike">Pike VM</button>
+      </div>
+      <span class="stat" id="stSteps">steps <b>–</b></span>
+      <span class="stat" id="stResult">–</span>
+      <span class="stat" id="stProg">–</span>
+    </div>
+    <div id="graphwrap">
+      <svg id="graph">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#39424f"/>
+          </marker>
+        </defs>
+        <g id="viewport"></g>
+      </svg>
+      <div class="hint">drag to pan · scroll to zoom · double-click to fit</div>
+    </div>
+    <div id="strip"></div>
+    <div id="capline"></div>
+    <div class="transport">
+      <button id="bFirst" title="first frame">⏮</button>
+      <button id="bPrev" title="previous">◀</button>
+      <button id="bPlay" title="play/pause">▶</button>
+      <button id="bNext" title="next">▶|</button>
+      <button id="bLast" title="last frame">⏭</button>
+      <input id="scrub" type="range" min="0" max="0" value="0">
+      <span class="cnt" id="frameCnt">0 / 0</span>
+    </div>
+  </div>
+
+  <aside class="right">
+    <div class="tabs" id="tabs">
+      <button data-tab="state" class="on">state</button>
+      <button data-tab="prog">program</button>
+      <button data-tab="lab">ReDoS lab</button>
+      <button data-tab="tests">tests</button>
+      <button data-tab="docs">docs</button>
+    </div>
+    <div class="panels">
+
+      <div class="panel on" data-panel="state">
+        <h3>this frame</h3>
+        <div id="frameInfo"></div>
+        <h3 id="thHead">active threads</h3>
+        <div class="threads" id="threads"></div>
+        <h3>both engines, same input</h3>
+        <div id="compare"></div>
+      </div>
+
+      <div class="panel" data-panel="prog">
+        <h3>compiled program</h3>
+        <div class="listing" id="listing"></div>
+      </div>
+
+      <div class="panel lab" data-panel="lab">
+        <h3>catastrophic backtracking lab</h3>
+        <div class="docs" style="font-size:11.5px;color:var(--dim)">
+          Feeds <code>prefix + unit×n + suffix</code> to both engines for growing
+          <code>n</code>, and counts instructions executed. Watch the y-axis — it is logarithmic.
+        </div>
+        <label>prefix</label><input id="labPre" type="text" value="">
+        <label>repeated unit</label><input id="labUnit" type="text" value="a">
+        <label>suffix (the part that makes it fail)</label><input id="labSuf" type="text" value="!">
+        <label>max n</label><input id="labN" type="text" value="22">
+        <button class="go" id="labGo">run the experiment</button>
+        <svg id="chart"></svg>
+        <div id="verdict"></div>
+      </div>
+
+      <div class="panel" data-panel="tests">
+        <h3>differential test vs. native RegExp</h3>
+        <div class="docs" style="font-size:11.5px;color:var(--dim)">
+          Every case is run through this engine and through the browser's own
+          <code>RegExp</code>. Match span and capture groups must agree exactly.
+        </div>
+        <button class="go" id="testGo" style="margin-top:10px;background:#16241f;border-color:var(--cool);color:#a9e6d6">run test suite</button>
+        <div id="testSummary" style="margin:10px 0"></div>
+        <table class="tests"><tbody id="testRows"></tbody></table>
+      </div>
+
+      <div class="panel docs" data-panel="docs"></div>
+
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+/* =========================================================================
+   regexplode — a regular expression engine you can watch.
+
+   Pipeline:  pattern text
+                -> parse()     : AST
+                -> compile()   : a small bytecode program (Thompson NFA)
+                -> btSearch()  : classic backtracking engine (what JS/PCRE do)
+                -> pikeSearch(): Pike VM, all threads in lockstep (what RE2 does)
+
+   Both engines run the *same* program, so the difference you see on screen is
+   purely the search strategy — which is exactly the point.
+   ====================================================================== */
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const fmt = n => n.toLocaleString('en-US');
+
+/* ============================ 1. PARSER ================================ */
+
+const isWordCh  = c => c !== undefined && /[A-Za-z0-9_]/.test(c);
+const isDigitCh = c => c >= '0' && c <= '9';
+const isSpaceCh = c => /\s/.test(c);
+
+function classTest(k) {
+  switch (k) {
+    case 'd': return isDigitCh;            case 'D': return c => !isDigitCh(c);
+    case 'w': return isWordCh;             case 'W': return c => !isWordCh(c);
+    case 's': return isSpaceCh;            case 'S': return c => !isSpaceCh(c);
+  }
+}
+const SIMPLE_ESC = { n:'\n', t:'\t', r:'\r', f:'\f', v:'\v', 0:'\0' };
+
+function showChar(c) {
+  if (c === '\n') return '\\n';
+  if (c === '\t') return '\\t';
+  if (c === ' ')  return '␣';
+  return c;
+}
+const litMatcher = c => ({ label: "'" + showChar(c) + "'", test: x => x === c });
+const ANY_MATCHER = { label: '.', test: c => c !== '\n' };
+
+class RegexSyntaxError extends Error {}
+
+class Parser {
+  constructor(src) { this.s = src; this.i = 0; this.ngroups = 0; }
+  err(msg) { throw new RegexSyntaxError(msg + ' (at position ' + this.i + ')'); }
+  at(k = 0) { return this.s[this.i + k]; }
+  done()    { return this.i >= this.s.length; }
+
+  parse() {
+    const node = this.alternation();
+    if (!this.done()) this.err('unbalanced ")"');
+    return { node, ngroups: this.ngroups };
+  }
+  alternation() {
+    let n = this.concat();
+    while (this.at() === '|') { this.i++; n = { t:'alt', a:n, b:this.concat() }; }
+    return n;
+  }
+  concat() {
+    const parts = [];
+    while (!this.done() && this.at() !== '|' && this.at() !== ')') parts.push(this.quantified());
+    if (!parts.length) return { t:'empty' };
+    return parts.reduce((a, b) => ({ t:'cat', a, b }));
+  }
+  quantified() {
+    const a = this.atom();
+    const q = this.quantifier();
+    if (!q) return a;
+    if (this.quantifier(true)) this.err('nothing to repeat');
+    if (q.min > q.max) this.err('quantifier out of order: {' + q.min + ',' + q.max + '}');
+    return { t:'rep', min:q.min, max:q.max, greedy:q.greedy, x:a };
+  }
+  /** Reads *, +, ?, {m}, {m,}, {m,n} plus an optional lazy '?'. */
+  quantifier(peekOnly) {
+    const start = this.i, c = this.at();
+    let min, max;
+    if (c === '*')      { this.i++; min = 0; max = Infinity; }
+    else if (c === '+') { this.i++; min = 1; max = Infinity; }
+    else if (c === '?') { this.i++; min = 0; max = 1; }
+    else if (c === '{') {
+      const m = /^\{(\d+)(,(\d*)?)?\}/.exec(this.s.slice(this.i));
+      if (!m) return null;                       // a bare '{' is a literal, as in JS
+      this.i += m[0].length;
+      min = +m[1];
+      max = m[2] === undefined ? min : (m[3] ? +m[3] : Infinity);
+    } else return null;
+    let greedy = true;
+    if (this.at() === '?') { this.i++; greedy = false; }
+    if (peekOnly) { this.i = start; return true; }
+    return { min, max, greedy };
+  }
+  atom() {
+    const c = this.at();
+    if (c === '(')  return this.group();
+    if (c === '[')  return this.charClass();
+    if (c === '\\') return this.escape();
+    if (c === '.')  { this.i++; return { t:'char', m:ANY_MATCHER }; }
+    if (c === '^' || c === '$') { this.i++; return { t:'assert', k:c, label:c }; }
+    if (c === '*' || c === '+' || c === '?') this.err('nothing to repeat');
+    this.i++;
+    return { t:'char', m:litMatcher(c) };
+  }
+  group() {
+    this.i++;                                     // '('
+    let idx = null;
+    if (this.at() === '?') {
+      if (this.at(1) === ':') this.i += 2;
+      else if (this.at(1) === '=' || this.at(1) === '!' || this.at(1) === '<')
+        this.err('lookaround is not supported — see the docs tab');
+      else this.err('unsupported group type "(?' + (this.at(1) || '') + '"');
+    } else {
+      idx = ++this.ngroups;
+    }
+    const x = this.alternation();
+    if (this.at() !== ')') this.err('missing ")"');
+    this.i++;
+    return { t:'group', idx, x };
+  }
+  escape() {
+    this.i++;
+    const c = this.s[this.i++];
+    if (c === undefined) this.err('trailing backslash');
+    if ('dDwWsS'.includes(c)) return { t:'char', m:{ label:'\\' + c, test:classTest(c) } };
+    if (c === 'b' || c === 'B') return { t:'assert', k:c, label:'\\' + c };
+    if (/[1-9]/.test(c)) this.err('backreferences (\\' + c + ') are not supported — see the docs tab');
+    return { t:'char', m:litMatcher(this.escapedChar(c)) };
+  }
+  escapedChar(c) {
+    if (c in SIMPLE_ESC) return SIMPLE_ESC[c];
+    if (c === 'x' || c === 'u') {
+      const n = c === 'x' ? 2 : 4;
+      const hex = this.s.substr(this.i, n);
+      if (!new RegExp('^[0-9a-fA-F]{' + n + '}$').test(hex)) this.err('bad \\' + c + ' escape');
+      this.i += n;
+      return String.fromCharCode(parseInt(hex, 16));
+    }
+    return c;                                     // \. \* \\ \/ ...
+  }
+  charClass() {
+    const start = this.i;
+    this.i++;                                     // '['
+    const neg = this.at() === '^';
+    if (neg) this.i++;
+    const ranges = [], classes = [];
+    while (!this.done() && this.at() !== ']') {
+      let lo;
+      if (this.at() === '\\') {
+        this.i++;
+        const e = this.s[this.i++];
+        if (e === undefined) this.err('trailing backslash');
+        if ('dDwWsS'.includes(e)) { classes.push(e); continue; }
+        if (e === 'b') { lo = '\b'; }
+        else lo = this.escapedChar(e);
+      } else lo = this.s[this.i++];
+
+      if (this.at() === '-' && this.at(1) !== undefined && this.at(1) !== ']') {
+        this.i++;
+        let hi;
+        if (this.at() === '\\') { this.i++; hi = this.escapedChar(this.s[this.i++]); }
+        else hi = this.s[this.i++];
+        if (hi < lo) this.err('range out of order in character class');
+        ranges.push([lo, hi]);
+      } else ranges.push([lo, lo]);
+    }
+    if (this.at() !== ']') this.err('missing "]"');
+    this.i++;
+    const label = this.s.slice(start, this.i);
+    const tests = classes.map(classTest);
+    return { t:'char', m:{
+      label: label.length > 12 ? label.slice(0, 11) + '…]' : label,
+      test(c) {
+        let hit = false;
+        for (const [lo, hi] of ranges) if (c >= lo && c <= hi) { hit = true; break; }
+        if (!hit) for (const t of tests) if (t(c)) { hit = true; break; }
+        return neg ? !hit : hit;
+      }
+    }};
+  }
+}
+
+/* ========================== 2. COMPILER ================================
+   Instructions (Thompson-style bytecode, cf. Russ Cox's "Regular Expression
+   Matching: the Virtual Machine Approach"):
+
+     char  m        consume one input char if m.test(c), else fail
+     split x, y     try x first; y is the lower-priority alternative
+     jmp   x        continue at x
+     save  n        record the current position into capture slot n
+     clear ns       reset capture slots (ES resets groups on every repetition)
+     mark  k        remember the position at the top of a loop iteration
+     check k        fail if the iteration consumed nothing (empty-loop guard)
+     assert k       zero-width assertion: ^ $ \b \B
+     match          success
+   ==================================================================== */
+
+const MAX_PROG = 4000;
+
+function nullable(n) {
+  switch (n.t) {
+    case 'empty': case 'assert': return true;
+    case 'char':  return false;
+    case 'cat':   return nullable(n.a) && nullable(n.b);
+    case 'alt':   return nullable(n.a) || nullable(n.b);
+    case 'rep':   return n.min === 0 || nullable(n.x);
+    case 'group': return nullable(n.x);
+  }
+}
+function groupSlots(n, out = []) {
+  switch (n.t) {
+    case 'cat': groupSlots(n.a, out); groupSlots(n.b, out); break;
+    case 'alt': groupSlots(n.a, out); groupSlots(n.b, out); break;
+    case 'rep': groupSlots(n.x, out); break;
+    case 'group':
+      if (n.idx !== null) out.push(2 * n.idx, 2 * n.idx + 1);
+      groupSlots(n.x, out);
+      break;
+  }
+  return out;
+}
+
+function compile(ast, ngroups) {
+  const prog = [];
+  let nmarks = 0;
+  const push = ins => {
+    if (prog.length >= MAX_PROG)
+      throw new RegexSyntaxError('pattern expands to more than ' + MAX_PROG + ' instructions');
+    prog.push(ins); return prog.length - 1;
+  };
+  const here = () => prog.length;
+
+  /** One repetition body: reset inner groups first, like ECMAScript does. */
+  function emitBody(x) {
+    const slots = groupSlots(x);
+    if (slots.length) push({ op:'clear', slots });
+    emit(x);
+  }
+  function emit(n) {
+    switch (n.t) {
+      case 'empty': return;
+      case 'char':   push({ op:'char', m:n.m }); return;
+      case 'assert': push({ op:'assert', k:n.k, label:n.label }); return;
+      case 'cat':    emit(n.a); emit(n.b); return;
+      case 'alt': {
+        const sp = push({ op:'split', x:-1, y:-1, greedy:true });
+        prog[sp].x = here(); emit(n.a);
+        const jp = push({ op:'jmp', x:-1 });
+        prog[sp].y = here(); emit(n.b);
+        prog[jp].x = here();
+        return;
+      }
+      case 'group': {
+        if (n.idx !== null) push({ op:'save', n:2 * n.idx });
+        emit(n.x);
+        if (n.idx !== null) push({ op:'save', n:2 * n.idx + 1 });
+        return;
+      }
+      case 'rep': {
+        // Mandatory copies first: a{3,} == a a a*  (ES does not empty-check these)
+        for (let i = 0; i < n.min; i++) emitBody(n.x);
+        if (n.max === Infinity) {
+          const needGuard = nullable(n.x);
+          const k = needGuard ? nmarks++ : -1;
+          const top = here();
+          const sp = push({ op:'split', x:-1, y:-1, greedy:n.greedy });
+          const bodyAt = here();
+          if (needGuard) push({ op:'mark', k });
+          emitBody(n.x);
+          if (needGuard) push({ op:'check', k });
+          push({ op:'jmp', x:top });
+          const exitAt = here();
+          prog[sp].x = n.greedy ? bodyAt : exitAt;
+          prog[sp].y = n.greedy ? exitAt : bodyAt;
+        } else {
+          emitOptionalChain(n.x, n.max - n.min, n.greedy);
+        }
+        return;
+      }
+    }
+  }
+  /** x{0,k} as nested optionals. These iterations have min == 0, so — exactly
+      like the star loop — an iteration that consumes nothing must fail. */
+  function emitOptionalChain(x, k, greedy) {
+    if (k <= 0) return;
+    const guard = nullable(x) ? nmarks++ : -1;
+    const sp = push({ op:'split', x:-1, y:-1, greedy });
+    const bodyAt = here();
+    if (guard >= 0) push({ op:'mark', k:guard });
+    emitBody(x);
+    if (guard >= 0) push({ op:'check', k:guard });
+    emitOptionalChain(x, k - 1, greedy);
+    const exitAt = here();
+    prog[sp].x = greedy ? bodyAt : exitAt;
+    prog[sp].y = greedy ? exitAt : bodyAt;
+  }
+
+  push({ op:'save', n:0 });
+  emit(ast);
+  push({ op:'save', n:1 });
+  push({ op:'match' });
+  return { prog, nslots: 2 * (ngroups + 1), nmarks, ngroups };
+}
+
+function opLabel(ins) {
+  switch (ins.op) {
+    case 'char':   return ins.m.label;
+    case 'split':  return 'split';
+    case 'jmp':    return 'jmp';
+    case 'save':   return ins.n % 2 === 0 ? '(' + (ins.n >> 1) : (ins.n >> 1) + ')';
+    case 'clear':  return 'reset';
+    case 'mark':   return 'mark';
+    case 'check':  return 'no-∅';
+    case 'assert': return ins.label;
+    case 'match':  return 'MATCH';
+  }
+}
+function opClass(ins) {
+  if (ins.op === 'mark' || ins.op === 'check' || ins.op === 'clear') return 'guard';
+  return ins.op;
+}
+
+/* ===================== 3. BACKTRACKING ENGINE ==========================
+   The strategy every mainstream engine uses: walk one path, remember the
+   alternatives on a stack, and rewind when the path dies. Simple, supports
+   backreferences and lookaround — and can take exponential time. */
+
+function testAssert(k, input, sp) {
+  switch (k) {
+    case '^': return sp === 0;
+    case '$': return sp === input.length;
+    case 'b': return isWordCh(input[sp - 1]) !== isWordCh(input[sp]);
+    case 'B': return isWordCh(input[sp - 1]) === isWordCh(input[sp]);
+  }
+}
+
+function btSearch(c, input, opts = {}) {
+  const budget = opts.budget ?? 2e6;
+  const traceCap = opts.trace ? (opts.traceCap ?? 30000) : 0;
+  const { prog, nslots, nmarks } = c;
+  const caps = new Array(nslots).fill(-1);
+  const marks = new Array(nmarks).fill(-1);
+
+  // Undo log so backtracking can restore capture/mark writes.
+  const logArr = [], logIdx = [], logOld = [];
+  // Alternative stack (parallel arrays: allocation-free hot loop).
+  const stPc = [], stSp = [], stLog = [];
+
+  const trace = [];
+  let steps = 0, budgetHit = false, truncated = false;
+
+  for (let start = 0; start <= input.length; start++) {
+    caps.fill(-1); marks.fill(-1);
+    logArr.length = logIdx.length = logOld.length = 0;
+    let top = 0, pc = 0, sp = start;
+
+    for (;;) {
+      if (++steps > budget) { budgetHit = true; break; }
+      const ins = prog[pc];
+      let fail = false, next = pc + 1;
+
+      switch (ins.op) {
+        case 'char':
+          if (sp < input.length && ins.m.test(input[sp])) sp++; else fail = true;
+          break;
+        case 'split':
+          stPc[top] = ins.y; stSp[top] = sp; stLog[top] = logArr.length; top++;
+          next = ins.x;
+          break;
+        case 'jmp': next = ins.x; break;
+        case 'save':
+          logArr.push(caps); logIdx.push(ins.n); logOld.push(caps[ins.n]);
+          caps[ins.n] = sp;
+          break;
+        case 'clear':
+          for (const s of ins.slots) {
+            logArr.push(caps); logIdx.push(s); logOld.push(caps[s]);
+            caps[s] = -1;
+          }
+          break;
+        case 'mark':
+          logArr.push(marks); logIdx.push(ins.k); logOld.push(marks[ins.k]);
+          marks[ins.k] = sp;
+          break;
+        case 'check': if (marks[ins.k] === sp) fail = true; break;
+        case 'assert': if (!testAssert(ins.k, input, sp)) fail = true; break;
+        case 'match':
+          if (trace.length < traceCap) trace.push({ pc, sp, depth:top, fail:false, done:true });
+          return { matched:true, caps:caps.slice(), steps, budgetHit, trace, truncated, engine:'bt' };
+      }
+
+      if (trace.length < traceCap) trace.push({ pc, sp, depth:top, fail });
+      else if (traceCap) truncated = true;
+
+      if (fail) {
+        if (top === 0) break;                     // this start position is dead
+        top--;
+        const want = stLog[top];
+        while (logArr.length > want) {            // rewind writes
+          const a = logArr.pop(), i = logIdx.pop(), o = logOld.pop();
+          a[i] = o;
+        }
+        pc = stPc[top]; sp = stSp[top];
+      } else pc = next;
+    }
+    if (budgetHit) break;
+  }
+  return { matched:false, caps:null, steps, budgetHit, trace, truncated, engine:'bt' };
+}
+
+/* ========================== 4. PIKE VM =================================
+   Run every alternative at once, one input character at a time. The thread
+   list is deduplicated by program counter, so work per character is bounded
+   by the program size: O(len × prog). No blow-up is possible.
+
+   One wrinkle. Two paths that reach the same instruction at the same position
+   are only interchangeable if their futures are identical — and the empty-loop
+   guard breaks that, because a pending `check k` can go either way depending on
+   where that iteration started. So the epsilon closure is deduplicated on
+   (pc, which guards were armed at this position) while the thread list itself
+   is still deduplicated on pc alone. That is sound: a guard can only fire at
+   the position where it was armed, so once the input pointer moves, every
+   pending check is guaranteed to pass and the marks stop mattering. The thread
+   list therefore still never exceeds one entry per instruction. */
+
+function pikeSearch(c, input, opts = {}) {
+  const { prog, nslots, nmarks } = c;
+  const wantFrames = !!opts.frames;
+  let steps = 0;
+
+  let clist = [], nlist = [];
+  let gen = 0;
+  const seenList = new Int32Array(prog.length).fill(-1);
+  // Closure dedup key: pc combined with the bitmask of guards armed at this
+  // position. Flat array while that stays small, a map for absurd patterns.
+  const flat = nmarks <= 8 && (prog.length << nmarks) <= (1 << 20);
+  const seenArr = flat ? new Int32Array(prog.length << nmarks).fill(-1) : null;
+  const seenMap = flat ? null : new Map();
+  let matchCaps = null;
+  const frames = [];
+
+  function addThread(list, pc, sp, caps, marks) {
+    let bits = 0;
+    for (let k = 0; k < nmarks; k++) if (marks[k] === sp) bits |= 1 << k;
+    if (flat) {
+      const key = (pc << nmarks) | bits;
+      if (seenArr[key] === gen) return;
+      seenArr[key] = gen;
+    } else {
+      const key = pc + ':' + bits;
+      if (seenMap.get(key) === gen) return;
+      seenMap.set(key, gen);
+    }
+    steps++;
+    const ins = prog[pc];
+    switch (ins.op) {
+      case 'split': addThread(list, ins.x, sp, caps, marks);
+                    addThread(list, ins.y, sp, caps, marks); return;
+      case 'jmp':   addThread(list, ins.x, sp, caps, marks); return;
+      case 'save': {
+        const old = caps[ins.n]; caps[ins.n] = sp;
+        addThread(list, pc + 1, sp, caps, marks);
+        caps[ins.n] = old; return;
+      }
+      case 'clear': {
+        const old = ins.slots.map(s => caps[s]);
+        ins.slots.forEach(s => { caps[s] = -1; });
+        addThread(list, pc + 1, sp, caps, marks);
+        ins.slots.forEach((s, i) => { caps[s] = old[i]; });
+        return;
+      }
+      case 'mark': {
+        const old = marks[ins.k]; marks[ins.k] = sp;
+        addThread(list, pc + 1, sp, caps, marks);
+        marks[ins.k] = old; return;
+      }
+      case 'check':
+        if (marks[ins.k] !== sp) addThread(list, pc + 1, sp, caps, marks);
+        return;
+      case 'assert':
+        if (testAssert(ins.k, input, sp)) addThread(list, pc + 1, sp, caps, marks);
+        return;
+      default:
+        // char / match: one entry per instruction, highest priority path wins.
+        if (seenList[pc] === gen) return;
+        seenList[pc] = gen;
+        list.push({ pc, caps:caps.slice(), marks:marks.slice() });
+    }
+  }
+
+  const caps0 = new Array(nslots).fill(-1);
+  const marks0 = new Array(nmarks).fill(-1);
+
+  gen++;
+  for (let sp = 0; sp <= input.length; sp++) {
+    // No gen bump here: this position's closure was already built with the
+    // current gen, so a fresh start thread is deduplicated against it — and,
+    // being appended last, it correctly ranks below every earlier start.
+    if (!matchCaps) addThread(clist, 0, sp, caps0.slice(), marks0.slice());
+    if (wantFrames) frames.push({ sp, pcs: clist.map(t => t.pc) });
+    if (!clist.length && matchCaps) break;
+
+    const ch = input[sp];
+    gen++;
+    nlist.length = 0;
+    for (let i = 0; i < clist.length; i++) {
+      const t = clist[i]; const ins = prog[t.pc];
+      steps++;
+      if (ins.op === 'match') {
+        matchCaps = t.caps;                       // leftmost-first: cut the rest
+        break;
+      }
+      if (ch !== undefined && ins.m.test(ch))
+        addThread(nlist, t.pc + 1, sp + 1, t.caps, t.marks);
+    }
+    const tmp = clist; clist = nlist; nlist = tmp;
+  }
+  return { matched: !!matchCaps, caps: matchCaps, steps, budgetHit:false, frames, engine:'pike' };
+}
+
+/* ======================= 5. GRAPH LAYOUT =============================== */
+
+const NODE_H = 30, COL_W = 108, ROW_H = 46, PAD = 34;
+
+function layout(prog) {
+  const outs = prog.map((ins, i) => {
+    switch (ins.op) {
+      case 'match': return [];
+      case 'jmp':   return [{ to:ins.x, kind:'seq' }];
+      case 'split': return [{ to:ins.x, kind:'seq' }, { to:ins.y, kind:'alt' }];
+      default:      return [{ to:i + 1, kind:'seq' }];
+    }
+  });
+  const rank = new Array(prog.length).fill(0);
+  for (let i = 0; i < prog.length; i++)
+    for (const e of outs[i]) if (e.to > i) rank[e.to] = Math.max(rank[e.to], rank[i] + 1);
+
+  const byRank = new Map();
+  rank.forEach((r, i) => { if (!byRank.has(r)) byRank.set(r, []); byRank.get(r).push(i); });
+
+  const pos = prog.map(() => ({ x:0, y:0, w:0 }));
+  let maxRow = 0;
+  for (const [r, ids] of byRank) {
+    maxRow = Math.max(maxRow, ids.length);
+    ids.forEach((id, k) => {
+      const label = opLabel(prog[id]);
+      pos[id] = {
+        x: PAD + r * COL_W,
+        y: PAD + k * ROW_H + (ids.length - 1) * -ROW_H / 2,
+        w: Math.max(44, label.length * 7.4 + 16)
+      };
+    });
+  }
+  const minY = Math.min(...pos.map(p => p.y));
+  pos.forEach(p => { p.y -= minY - PAD; });
+  const width  = PAD * 2 + (byRank.size) * COL_W;
+  const height = PAD * 2 + maxRow * ROW_H + 20;
+  return { pos, outs, width, height };
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const svgEl = (t, attrs) => {
+  const e = document.createElementNS(SVG_NS, t);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+};
+
+function renderGraph(c, lay) {
+  const vp = $('#viewport');
+  vp.textContent = '';
+  const { prog } = c, { pos, outs } = lay;
+
+  const edges = svgEl('g');
+  for (let i = 0; i < prog.length; i++) {
+    for (const e of outs[i]) {
+      const a = pos[i], b = pos[e.to];
+      const x1 = a.x + a.w / 2, y1 = a.y, x2 = b.x - b.w / 2, y2 = b.y;
+      let d, cls = 'edge' + (e.kind === 'alt' ? ' alt' : '');
+      if (e.to > i) {
+        const dx = Math.max(24, (x2 - x1) * 0.5);
+        d = `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+      } else {                                   // back edge: loop underneath
+        const ax = a.x, bx = b.x, lift = 22 + Math.abs(i - e.to) * 2;
+        d = `M${ax},${a.y + NODE_H / 2} C${ax},${a.y + NODE_H / 2 + lift} ` +
+            `${bx},${b.y + NODE_H / 2 + lift} ${bx},${b.y + NODE_H / 2}`;
+        cls += ' back';
+      }
+      edges.appendChild(svgEl('path', { d, class:cls }));
+    }
+  }
+  vp.appendChild(edges);
+
+  for (let i = 0; i < prog.length; i++) {
+    const p = pos[i], ins = prog[i];
+    const g = svgEl('g', { class:'node ' + opClass(ins), 'data-pc':i,
+                           transform:`translate(${p.x},${p.y})` });
+    g.appendChild(svgEl('rect', { x:-p.w / 2, y:-NODE_H / 2, width:p.w, height:NODE_H, rx:7 }));
+    const t = svgEl('text', { y:1 });
+    t.textContent = opLabel(ins);
+    g.appendChild(t);
+    const pcT = svgEl('text', { class:'pc', y:-NODE_H / 2 - 5 });
+    pcT.textContent = i;
+    g.appendChild(pcT);
+    vp.appendChild(g);
+  }
+}
+
+/* ============================ 6. STATE ================================= */
+
+const S = {
+  compiled: null, lay: null, input: '', frames: [], idx: 0,
+  engine: 'bt', bt: null, pike: null, playing: false, timer: null,
+  view: { x:0, y:0, k:1 }
+};
+
+function setError(msg) {
+  $('#err').textContent = msg || '';
+}
+
+function rebuild() {
+  const pattern = $('#pat').value;
+  S.input = $('#str').value;
+  stop();
+  try {
+    const { node, ngroups } = new Parser(pattern).parse();
+    S.compiled = compile(node, ngroups);
+    setError('');
+  } catch (e) {
+    if (!(e instanceof RegexSyntaxError)) throw e;
+    setError(e.message);
+    S.compiled = null; S.frames = [];
+    $('#viewport').textContent = '';
+    $('#stSteps').innerHTML = 'steps <b>–</b>';
+    $('#stResult').textContent = '–';
+    $('#stProg').textContent = '–';
+    return;
+  }
+  S.lay = layout(S.compiled.prog);
+  renderGraph(S.compiled, S.lay);
+  fitView();
+  runBoth();
+  renderListing();
+  renderStrip();
+  selectFrame(0);
+}
+
+function runBoth() {
+  const c = S.compiled;
+  S.bt   = btSearch(c, S.input, { trace:true, budget:2e6 });
+  S.pike = pikeSearch(c, S.input, { frames:true });
+  S.frames = S.engine === 'bt'
+    ? S.bt.trace.map(f => ({ sp:f.sp, pcs:[f.pc], fail:f.fail, depth:f.depth, done:f.done }))
+    : S.pike.frames.map(f => ({ sp:f.sp, pcs:f.pcs }));
+  $('#scrub').max = Math.max(0, S.frames.length - 1);
+  $('#stProg').textContent = c.prog.length + ' instructions · ' + c.ngroups + ' group' +
+                             (c.ngroups === 1 ? '' : 's');
+  const r = S.engine === 'bt' ? S.bt : S.pike;
+  $('#stSteps').innerHTML = 'steps <b>' + fmt(r.steps) + (r.budgetHit ? '+' : '') + '</b>';
+  $('#stSteps').className = 'stat ' + (r.budgetHit ? 'hot' : '');
+  if (r.budgetHit) $('#stResult').innerHTML = '<b style="color:var(--hot)">gave up — budget exhausted</b>';
+  else $('#stResult').innerHTML = r.matched
+    ? '<b style="color:var(--cool)">match</b> ' + JSON.stringify(S.input.slice(r.caps[0], r.caps[1]))
+    : '<b style="color:var(--dim)">no match</b>';
+  renderCompare();
+}
+
+function renderCompare() {
+  const bt = S.bt, pk = S.pike;
+  const ratio = pk.steps ? bt.steps / pk.steps : 0;
+  $('#compare').innerHTML =
+    kv('backtracking', fmt(bt.steps) + (bt.budgetHit ? '+ steps ⚠' : ' steps'), bt.budgetHit ? 'var(--hot)' : '') +
+    kv('Pike VM', fmt(pk.steps) + ' steps', 'var(--cool)') +
+    kv('ratio', (ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)) + '× more work') +
+    kv('agree on result?', bt.budgetHit ? 'n/a (gave up)'
+        : (bt.matched === pk.matched && String(bt.caps) === String(pk.caps) ? 'yes ✓' : 'NO ✗'),
+        bt.budgetHit ? '' : (bt.matched === pk.matched ? 'var(--cool)' : 'var(--hot)'));
+}
+const kv = (k, v, color) =>
+  `<div class="kv"><span>${k}</span><b${color ? ` style="color:${color}"` : ''}>${v}</b></div>`;
+
+/* ------------------------------- frames -------------------------------- */
+
+function selectFrame(i) {
+  if (!S.frames.length) { $('#frameCnt').textContent = '0 / 0'; return; }
+  S.idx = Math.max(0, Math.min(S.frames.length - 1, i));
+  $('#scrub').value = S.idx;
+  $('#frameCnt').textContent = fmt(S.idx + 1) + ' / ' + fmt(S.frames.length) +
+    ((S.engine === 'bt' && S.bt.truncated) ? ' (trace cut)' : '');
+  const f = S.frames[S.idx];
+
+  $$('.node', $('#viewport')).forEach(n => n.classList.remove('active', 'failed'));
+  for (const pc of f.pcs) {
+    const n = $(`.node[data-pc="${pc}"]`, $('#viewport'));
+    if (n) n.classList.add(f.fail ? 'failed' : 'active');
+  }
+  $$('.listing div').forEach(d => d.classList.remove('cur'));
+  if (S.engine === 'bt') {
+    const d = $('.listing div[data-pc="' + f.pcs[0] + '"]');
+    if (d) { d.classList.add('cur'); d.scrollIntoView({ block:'nearest' }); }
+  } else {
+    for (const pc of f.pcs) { const d = $('.listing div[data-pc="' + pc + '"]'); if (d) d.classList.add('cur'); }
+  }
+  renderStrip(f.sp);
+  renderFrameInfo(f);
+}
+
+function renderFrameInfo(f) {
+  const prog = S.compiled.prog;
+  if (S.engine === 'bt') {
+    const ins = prog[f.pcs[0]];
+    $('#thHead').textContent = 'backtrack stack';
+    $('#frameInfo').innerHTML =
+      kv('instruction', '#' + f.pcs[0] + ' ' + ins.op + ' ' + opLabel(ins)) +
+      kv('position', f.sp + ' / ' + S.input.length) +
+      kv('outcome', f.done ? 'MATCH' : (f.fail ? 'fail → rewind' : 'ok'),
+         f.done ? 'var(--match)' : (f.fail ? 'var(--hot)' : 'var(--cool)')) +
+      kv('saved alternatives', f.depth);
+    $('#threads').innerHTML = f.depth
+      ? '<b>' + f.depth + '</b> unexplored alternatives are parked on the stack. ' +
+        'Every one of them is a future the engine may still be forced to try.'
+      : 'Stack empty — if this path fails, the whole attempt at this start position dies.';
+  } else {
+    $('#thHead').textContent = 'active threads';
+    $('#frameInfo').innerHTML =
+      kv('position', f.sp + ' / ' + S.input.length) +
+      kv('live threads', f.pcs.length) +
+      kv('worst case', 'never more than ' + prog.length + ' (one per instruction)');
+    $('#threads').innerHTML = f.pcs.length
+      ? f.pcs.map(pc => '<b>#' + pc + '</b> ' + opLabel(prog[pc])).join(' &nbsp;·&nbsp; ')
+      : '<i>no live threads</i>';
+  }
+}
+
+function renderStrip(sp) {
+  const strip = $('#strip'), inp = S.input;
+  const r = S.engine === 'bt' ? S.bt : S.pike;
+  const m = r && r.caps ? r.caps : null;
+  let html = '';
+  for (let i = 0; i <= inp.length; i++) {
+    if (sp === i) html += '<span class="caret"></span>';
+    if (i === inp.length) break;
+    const inMatch = m && i >= m[0] && i < m[1];
+    html += `<span class="cell${inMatch ? ' inmatch' : ''}">${
+      inp[i] === ' ' ? '␣' : escapeHtml(inp[i])}<i class="idx">${i}</i></span>`;
+  }
+  if (!inp.length) html += '<span style="color:var(--dimmer)">(empty input)</span>';
+  strip.innerHTML = html;
+
+  let caps = '';
+  if (m) {
+    for (let g = 0; g <= S.compiled.ngroups; g++) {
+      const a = m[2 * g], b = m[2 * g + 1];
+      caps += `<span class="grouptag">${g === 0 ? 'match' : '$' + g}=` +
+              (a < 0 || b < 0 ? '<span style="color:var(--dimmer)">undefined</span>'
+                              : escapeHtml(JSON.stringify(inp.slice(a, b)))) + '</span>';
+    }
+  }
+  $('#capline').innerHTML = caps;
+}
+const escapeHtml = s => s.replace(/[&<>"]/g, ch => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[ch]));
+
+function renderListing() {
+  const prog = S.compiled.prog;
+  $('#listing').innerHTML = prog.map((ins, i) => {
+    let arg = '';
+    if (ins.op === 'split') arg = `${ins.x}, ${ins.y}`;
+    else if (ins.op === 'jmp') arg = String(ins.x);
+    else if (ins.op === 'save') arg = String(ins.n);
+    else if (ins.op === 'clear') arg = ins.slots.join(',');
+    else if (ins.op === 'mark' || ins.op === 'check') arg = String(ins.k);
+    else if (ins.op === 'char') arg = ins.m.label;
+    else if (ins.op === 'assert') arg = ins.label;
+    return `<div data-pc="${i}"><span class="n">${String(i).padStart(3)}</span> ` +
+           `<span class="op-${opClass(ins)}">${ins.op.padEnd(6)}</span> ${escapeHtml(arg)}</div>`;
+  }).join('');
+}
+
+/* --------------------------- transport --------------------------------- */
+
+function play() {
+  if (!S.frames.length) return;
+  S.playing = true; $('#bPlay').textContent = '⏸';
+  const tick = () => {
+    if (!S.playing) return;
+    if (S.idx >= S.frames.length - 1) return stop();
+    selectFrame(S.idx + 1);
+    S.timer = setTimeout(tick, S.frames.length > 400 ? 12 : 130);
+  };
+  tick();
+}
+function stop() {
+  S.playing = false; clearTimeout(S.timer); $('#bPlay').textContent = '▶';
+}
+
+/* --------------------------- pan & zoom -------------------------------- */
+
+function applyView() {
+  $('#viewport').setAttribute('transform',
+    `translate(${S.view.x},${S.view.y}) scale(${S.view.k})`);
+}
+function fitView() {
+  const w = $('#graphwrap').clientWidth, h = $('#graphwrap').clientHeight;
+  if (!S.lay || !w) return;                       // pane not laid out yet
+  S.fitted = true;
+  const k = Math.min(1.15, (w - 20) / S.lay.width, (h - 20) / S.lay.height);
+  S.view = { k, x:(w - S.lay.width * k) / 2, y:(h - S.lay.height * k) / 2 };
+  applyView();
+}
+
+/* ========================= 7. ReDoS LAB ================================ */
+
+function drawChart(pts, cap) {
+  const svg = $('#chart');
+  svg.textContent = '';
+  const W = svg.clientWidth || 370, H = 230, L = 42, R = 12, T = 14, B = 26;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  if (!pts.length) return;
+  const maxN = Math.max(...pts.map(p => p.n));
+  const maxY = Math.max(cap, ...pts.map(p => Math.max(p.bt, p.pk)));
+  const decades = Math.ceil(Math.log10(maxY)) + 0.15;
+  const X = n => L + (n - 1) / Math.max(1, maxN - 1) * (W - L - R);
+  const Y = v => H - B - Math.log10(Math.max(1, v)) / decades * (H - T - B);
+
+  for (let d = 0; d <= decades; d++) {
+    const y = Y(Math.pow(10, d));
+    if (y < T) break;
+    svg.appendChild(svgEl('line', { x1:L, x2:W - R, y1:y, y2:y, class:'chart-grid' }));
+    const t = svgEl('text', { x:4, y:y + 3, class:'chart-lbl' });
+    t.textContent = d === 0 ? '1' : '10^' + d;
+    svg.appendChild(t);
+  }
+  svg.appendChild(svgEl('line', { x1:L, x2:W - R, y1:H - B, y2:H - B, class:'chart-ax' }));
+  svg.appendChild(svgEl('line', { x1:L, x2:L, y1:T, y2:H - B, class:'chart-ax' }));
+  svg.appendChild(svgEl('line', { x1:L, x2:W - R, y1:Y(cap), y2:Y(cap), class:'chart-cap' }));
+  const capT = svgEl('text', { x:W - R, y:Y(cap) - 4, class:'chart-lbl', 'text-anchor':'end' });
+  capT.textContent = 'step budget';
+  svg.appendChild(capT);
+
+  for (const [key, cls] of [['pk', 'chart-pk'], ['bt', 'chart-bt']]) {
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + X(p.n) + ',' + Y(p[key])).join(' ');
+    svg.appendChild(svgEl('path', { d, class:cls }));
+    for (const p of pts)
+      svg.appendChild(svgEl('circle', { cx:X(p.n), cy:Y(p[key]), r:2.2,
+        fill: cls === 'chart-bt' ? 'var(--hot)' : 'var(--cool)' }));
+  }
+  for (const n of [1, Math.round(maxN / 2), maxN]) {
+    const t = svgEl('text', { x:X(n), y:H - 9, class:'chart-lbl', 'text-anchor':'middle' });
+    t.textContent = 'n=' + n;
+    svg.appendChild(t);
+  }
+  const lg = svgEl('text', { x:L + 6, y:T + 8, class:'chart-lbl' });
+  lg.textContent = '● backtracking   ● Pike VM';
+  lg.setAttribute('fill', 'var(--dimmer)');
+  svg.appendChild(lg);
+}
+
+function runLab() {
+  if (!S.compiled) return;
+  const pre = $('#labPre').value, unit = $('#labUnit').value || 'a', suf = $('#labSuf').value;
+  const maxN = Math.max(1, Math.min(60, parseInt($('#labN').value) || 20));
+  const CAP = 1e6;
+  const pts = [];
+  const btn = $('#labGo'); btn.disabled = true;
+  $('#verdict').innerHTML = '<span style="color:var(--dim)">running…</span>';
+
+  let n = 1;
+  const step = () => {
+    const s = pre + unit.repeat(n) + suf;
+    const bt = btSearch(S.compiled, s, { budget:CAP });
+    const pk = pikeSearch(S.compiled, s, {});
+    pts.push({ n, bt:bt.steps, pk:pk.steps, hit:bt.budgetHit, len:s.length });
+    drawChart(pts, CAP);
+    btn.textContent = 'running… n=' + n;
+    if (n < maxN && !(bt.budgetHit && n >= 2)) { n++; setTimeout(step, 0); }
+    else finish(pts, CAP);
+  };
+  const finish = (pts, CAP) => {
+    btn.disabled = false; btn.textContent = 'run the experiment';
+    const last = pts[pts.length - 1];
+    const growth = pts.length >= 4
+      ? Math.pow(pts[pts.length - 1].bt / pts[Math.max(0, pts.length - 4)].bt, 1 / 3) : 1;
+    let html = '';
+    if (last.hit) {
+      html += `<div class="big">catastrophic backtracking</div>` +
+        `<div>The backtracking engine burned through its ${fmt(CAP)}-step budget on an input of ` +
+        `just <b>${last.len} characters</b>. Each extra character multiplies the work by about ` +
+        `<b>${growth.toFixed(2)}×</b> — that is exponential, and it is a denial-of-service bug ` +
+        `waiting to be triggered by a form field.</div>` +
+        `<div style="margin-top:8px;color:var(--cool)">The Pike VM finished the same input in ` +
+        `${fmt(last.pk)} steps.</div>`;
+    } else {
+      const ratio = last.bt / last.pk;
+      html += `<div style="color:var(--cool);font-size:14px;font-weight:600">no blow-up detected</div>` +
+        `<div>At n=${last.n} (${last.len} chars) backtracking used ${fmt(last.bt)} steps versus ` +
+        `${fmt(last.pk)} for the Pike VM — a factor of ${ratio.toFixed(1)}. Growth per added ` +
+        `character: <b>${growth.toFixed(2)}×</b>. Anything near 1.0 is linear and safe; ` +
+        `1.4–2.0 means trouble.</div>`;
+    }
+    $('#verdict').innerHTML = html;
+  };
+  step();
+}
+
+/* ======================== 8. DIFFERENTIAL TESTS ========================
+   The only honest way to claim an engine is correct: run the same thing
+   through a known-good implementation and compare, case by case. */
+
+const TEST_CASES = [
+  ['a', 'a'], ['a', 'b'], ['abc', 'xabcy'], ['a|b', 'b'], ['a|b', 'cb'],
+  ['a*', 'aaa'], ['a*', 'b'], ['a*?b', 'aaab'], ['a+?', 'aaa'], ['a??b', 'ab'],
+  ['(a)(b)', 'ab'], ['(?:ab)+', 'ababab'], ['(a)|(b)', 'b'],
+  ['[a-c]+', 'xabcz'], ['[^a-c]+', 'abcxyz'], ['[a-]', '-'], ['[\\]]', 'x]'],
+  ['[\\d.]+', 'v1.2.3'], ['[^]', 'a'],
+  ['a{2,3}', 'aaaa'], ['a{0,2}b', 'b'], ['a{3}', 'aaaa'], ['a{2,}', 'aaaaa'],
+  ['^ab$', 'ab'], ['^ab$', 'xab'], ['^', 'abc'], ['$', 'abc'], ['^$', ''],
+  ['\\d+', 'abc123'], ['\\w+@\\w+', 'hi bob@mail x'], ['\\s+', 'a   b'],
+  ['\\bfoo\\b', 'a foo b'], ['\\bfoo\\b', 'afoob'], ['\\Bfoo', 'xfoo'],
+  ['(a*)*', 'aaa'], ['(a*)+', ''], ['(a|ab)(c|bcd)', 'abcd'],
+  ['(a+)+b', 'aaab'], ['(a+)+b', 'aaa'], ['(x+x+)+y', 'xxxxy'],
+  ['.*', 'a\nb'], ['a.c', 'abc'], ['a.c', 'a\nc'], ['(x)?y', 'y'],
+  ['((a)|b)*', 'ab'], ['(?:(a)|b){2}', 'ab'], ['(a)|b', 'b'],
+  ['colou?r', 'color'], ['(\\w+)\\s(\\w+)', 'John Smith'],
+  ['(|a)*', 'aa'], ['(a?)*b', 'aab'], ['(a|b)*c', 'ababc'],
+  ['^(\\w+\\s?)*$', 'hello there world'], ['^[\\w.]+@[\\w.]+\\.\\w{2,}$', 'a.b@mail.com'],
+  ['\\.', 'a.b'], ['a\\*b', 'a*b'], ['[.]', 'x.y'], ['x{,3}', 'x{,3}'],
+  ['(ab|a)(c|bc)', 'abc'], ['a(b(c))d', 'abcd'], ['(a)(b)?(c)', 'ac'],
+  ['\\u0041', 'A'], ['\\x41', 'A'], ['[\\t ]+', 'a\t b'],
+];
+
+function runTests() {
+  const rows = [];
+  let pass = 0;
+  for (const [pat, str] of TEST_CASES) {
+    let mine, theirs, ok = false, note = '';
+    try {
+      const { node, ngroups } = new Parser(pat).parse();
+      const c = compile(node, ngroups);
+      const bt = btSearch(c, str, {});
+      const pk = pikeSearch(c, str, {});
+      const norm = r => r.matched
+        ? [r.caps[0], r.caps[1]].concat(
+            Array.from({ length:ngroups }, (_, g) =>
+              r.caps[2 * g + 2] < 0 ? null : str.slice(r.caps[2 * g + 2], r.caps[2 * g + 3])))
+        : null;
+      mine = norm(bt);
+      const minePk = norm(pk);
+      const m = new RegExp(pat).exec(str);
+      theirs = m ? [m.index, m.index + m[0].length].concat(
+        Array.from({ length:ngroups }, (_, g) => m[g + 1] === undefined ? null : m[g + 1])) : null;
+      ok = JSON.stringify(mine) === JSON.stringify(theirs);
+      if (ok && JSON.stringify(minePk) !== JSON.stringify(mine)) {
+        ok = false; note = 'Pike VM disagrees with backtracker: ' + JSON.stringify(minePk);
+      }
+    } catch (e) { note = 'error: ' + e.message; }
+    if (ok) pass++;
+    rows.push({ pat, str, ok, mine, theirs, note });
+  }
+  $('#testSummary').innerHTML = pass === rows.length
+    ? `<b style="color:var(--cool)">${pass} / ${rows.length} cases agree with native RegExp</b>`
+    : `<b style="color:var(--hot)">${rows.length - pass} of ${rows.length} cases differ</b>`;
+  $('#testRows').innerHTML = rows.map(r =>
+    `<tr><td class="${r.ok ? 'p' : 'f'}">${r.ok ? '✓' : '✗'}</td>` +
+    `<td><span style="color:var(--char)">${escapeHtml(r.pat)}</span> ` +
+    `<span style="color:var(--dimmer)">on</span> ${escapeHtml(JSON.stringify(r.str))}` +
+    (r.ok ? '' : `<div class="exp">mine:   ${escapeHtml(JSON.stringify(r.mine))}\n` +
+                 `native: ${escapeHtml(JSON.stringify(r.theirs))}` +
+                 (r.note ? '\n' + escapeHtml(r.note) : '') + `</div>`) +
+    `</td></tr>`).join('');
+  return { pass, total: rows.length, rows };
+}
+
+/* ============================= 9. DOCS ================================= */
+
+$('.panel[data-panel="docs"]').innerHTML = `
+<h3>what this is</h3>
+<p>A regular expression engine written from scratch — parser, compiler and two
+different matchers — with the internals on display. Nothing here calls the
+browser's <code>RegExp</code>, except the test tab, which uses it as a referee.</p>
+
+<h3>the two engines</h3>
+<p><b style="color:var(--hot)">Backtracking</b> walks one path through the program
+and parks every untaken alternative on a stack. When the path dies it rewinds and
+tries the next one. This is what JavaScript, Python, Java, PCRE and .NET all do.
+It is flexible — backreferences and lookaround need it — but on the wrong pattern
+it explores exponentially many paths.</p>
+<p><b style="color:var(--cool)">Pike VM</b> advances <i>every</i> alternative
+simultaneously, one input character at a time, and throws away duplicates: two
+threads sitting on the same instruction have identical futures, so only one needs
+to survive. That single trick caps the work at
+<code>input length × program size</code>. This is how RE2, Go's <code>regexp</code>
+and Rust's <code>regex</code> stay fast. It is also why they refuse to support
+backreferences: the dedup is only valid when the future depends on the position
+alone.</p>
+
+<h3>how to read the graph</h3>
+<ul>
+  <li><span style="color:var(--char)">char</span> — consume one character, or fail</li>
+  <li><span style="color:var(--split)">split</span> — a fork; the solid edge is
+      tried first, the dashed one is the alternative that gets parked</li>
+  <li><span style="color:var(--save)">( n / n )</span> — record a capture boundary</li>
+  <li><span style="color:var(--assert)">^ $ \\b</span> — zero-width assertions</li>
+  <li><span style="color:var(--dimmer)">mark / no-∅ / reset</span> — bookkeeping that
+      makes empty loops such as <code>(a*)*</code> terminate, and resets capture
+      groups on each repetition the way ECMAScript specifies</li>
+</ul>
+<p>Greedy versus lazy is nothing but the order of the two split edges. Flip
+<code>a*</code> to <code>a*?</code> and watch the solid and dashed edges swap.</p>
+
+<h3>the explosion</h3>
+<p>Try <code>(a+)+b</code> against a string of a's that ends in something other
+than <code>b</code>. There are exponentially many ways to divide n a's into groups
+of a's, all of them fail, and a backtracker insists on trying every single one.
+The ReDoS lab plots it. The Pike VM plots a straight line.</p>
+<p class="warn">This is a real bug class — CVE-worthy outages have been caused by
+one regex in a log parser. If a pattern in your code can see untrusted input, the
+lab tab is a two-minute check worth doing.</p>
+
+<h3>supported syntax</h3>
+<p><code>. ^ $ | * + ? *? +? ?? {m} {m,} {m,n} ( ) (?: ) [abc] [^a-z] \\d \\w \\s
+\\D \\W \\S \\b \\B \\n \\t \\xHH \\uHHHH</code> and escaped literals.</p>
+<p>Deliberately absent: backreferences and lookaround. Both are incompatible with
+the Pike VM, and this project exists to compare the two engines fairly.
+<code>a+</code> is compiled as <code>a</code> followed by <code>a*</code>, and
+<code>a{2,4}</code> is expanded into copies — that is what the extra nodes in the
+graph are.</p>
+
+<h3>correctness</h3>
+<p>The tests tab runs every case through this engine (both matchers) and through
+the browser's native <code>RegExp</code>, then compares the match span and every
+capture group. Anything that disagrees is a bug and is shown in red.</p>
+`;
+
+/* ============================ 10. WIRING =============================== */
+
+const PRESETS = [
+  ['(a+)+b',            'aaaaaaaaaaaaaaaaaaaa!', true],
+  ['(x+x+)+y',          'xxxxxxxxxxxxxxxx!',      true],
+  ['^(\\w+\\s?)*$',     'aaaaaaaaaaaaaaaaaaa!',   true],
+  ['(a|a)*$',           'aaaaaaaaaaaaaaaaa!',     true],
+  ['a*b',               'aaab'],
+  ['a*?b',              'aaab'],
+  ['(ab|a)(c|bcd)',     'abcd'],
+  ['^[\\w.]+@[\\w.]+\\.\\w{2,}$', 'wojciech@panto-dev.com'],
+  ['\\b\\d{3}-\\d{2}-\\d{4}\\b', 'id 123-45-6789 ok'],
+  ['(a*)*',             'aaa'],
+];
+$('#presets').innerHTML = PRESETS.map(([p, s, boom], i) =>
+  `<button data-i="${i}" class="${boom ? 'boom' : ''}">${boom ? '💥 ' : ''}${escapeHtml(p)}</button>`).join('');
+$('#presets').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const [p, s] = PRESETS[+b.dataset.i];
+  $('#pat').value = p; $('#str').value = s;
+  rebuild();
+});
+
+let debounce;
+const onInput = () => { clearTimeout(debounce); debounce = setTimeout(rebuild, 160); };
+$('#pat').addEventListener('input', onInput);
+$('#str').addEventListener('input', onInput);
+
+$('#engsel').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $$('#engsel button').forEach(x => x.classList.toggle('on', x === b));
+  S.engine = b.dataset.eng;
+  stop(); runBoth(); selectFrame(0);
+});
+
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $$('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  $$('.panel').forEach(p => p.classList.toggle('on', p.dataset.panel === b.dataset.tab));
+});
+$('#helplink').addEventListener('click', e => {
+  e.preventDefault();
+  $('#tabs button[data-tab="docs"]').click();
+});
+
+$('#bFirst').onclick = () => { stop(); selectFrame(0); };
+$('#bPrev').onclick  = () => { stop(); selectFrame(S.idx - 1); };
+$('#bNext').onclick  = () => { stop(); selectFrame(S.idx + 1); };
+$('#bLast').onclick  = () => { stop(); selectFrame(S.frames.length - 1); };
+$('#bPlay').onclick  = () => (S.playing ? stop() : play());
+$('#scrub').oninput  = e => { stop(); selectFrame(+e.target.value); };
+$('#labGo').onclick  = runLab;
+$('#testGo').onclick = runTests;
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { stop(); selectFrame(S.idx + 1); }
+  if (e.key === 'ArrowLeft')  { stop(); selectFrame(S.idx - 1); }
+  if (e.key === ' ') { e.preventDefault(); S.playing ? stop() : play(); }
+});
+
+(() => {                                          // pan & zoom
+  const wrap = $('#graphwrap');
+  let dragging = false, lx = 0, ly = 0;
+  wrap.addEventListener('mousedown', e => { dragging = true; lx = e.clientX; ly = e.clientY; wrap.classList.add('drag'); });
+  addEventListener('mousemove', e => {
+    if (!dragging) return;
+    S.view.x += e.clientX - lx; S.view.y += e.clientY - ly;
+    lx = e.clientX; ly = e.clientY; applyView();
+  });
+  addEventListener('mouseup', () => { dragging = false; wrap.classList.remove('drag'); });
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = wrap.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    const f = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const k = Math.max(0.15, Math.min(3, S.view.k * f));
+    S.view.x = mx - (mx - S.view.x) * (k / S.view.k);
+    S.view.y = my - (my - S.view.y) * (k / S.view.k);
+    S.view.k = k; applyView();
+  }, { passive:false });
+  wrap.addEventListener('dblclick', fitView);
+  addEventListener('resize', () => { clearTimeout(debounce); debounce = setTimeout(fitView, 120); });
+  // The first rebuild() can run before the pane has a size, in which case
+  // fitView() bails out. Catch that moment instead of shipping an unfitted graph.
+  if (window.ResizeObserver)
+    new ResizeObserver(() => { if (!S.fitted) fitView(); }).observe(wrap);
+})();
+
+rebuild();
+
+// exposed for scripted checks / console poking
+window.regexplode = { Parser, compile, btSearch, pikeSearch, runTests, S };
+</script>
+</body>
+</html>

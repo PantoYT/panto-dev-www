@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wojciech Hałasa (PantoYT)</title>
+<meta name="description" content="Projects by Wojciech Hałasa — a video platform without a framework, a stdlib-only file drop, a lead pipeline with no SMTP, and a homelab behind SSO.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>Wojciech Hałasa <span class="handle">(PantoYT)</span></h1>
+  <p class="lede">
+    I build things mostly to find out how they work underneath. Usually that means
+    writing the part everyone else imports: a video platform without a framework,
+    a regex engine without <code>RegExp</code>, a font rasteriser without a graphics
+    library. Then running it against reality to see where it breaks.
+  </p>
+  <p class="links">
+    <a href="https://github.com/PantoYT">GitHub</a>
+    <a href="https://www.linkedin.com/in/wojciech-ha%C5%82asa-bb94743a1">LinkedIn</a>
+    <a href="mailto:kontakt@panto-dev.com">kontakt@panto-dev.com</a>
+  </p>
+</header>
+
+<main>
+
+<section class="featured">
+  <h2>Three I care about most</h2>
+
+  <article class="project">
+    <h3>TubeYou</h3>
+    <p class="project-meta">PHP 8 · MariaDB · vanilla JS · Docker · <a href="https://github.com/PantoYT/TubeYou">repository</a></p>
+    <p>
+      A video platform with the parts that are actually hard: upload and streaming with
+      HTTP range requests, subscriptions, a comment system with replies, likes, pinning
+      and editing, email verification and password reset, full-text search, and a scored
+      feed. Built on PHP 8 with <strong>no framework at all</strong>, an MVC structure
+      written by hand, because the point was to find out what a framework does for you
+      by not having one.
+    </p>
+    <p class="aside">The hosted demo is currently offline; the code and setup are in the repository.</p>
+  </article>
+
+  <article class="project">
+    <h3>WebLeads</h3>
+    <p class="project-meta">Python · SQLite · private repository</p>
+    <p>
+      A pipeline for finding web design work with local businesses: find candidates,
+      audit their existing site technically, rank who is actually worth the effort,
+      collect a brief, build a prototype, prepare an approach. The ranking step matters
+      most, because building a prototype is the single most expensive decision in the
+      chain and most leads do not justify one.
+    </p>
+    <p>
+      The design constraint that shaped everything: <strong>there is no SMTP code in it,
+      deliberately, and adding any is forbidden.</strong> Polish telecoms law and GDPR
+      make automated cold outreach a legal problem rather than a technical one, so the
+      system drafts and a human reads and sends every single message by hand. A pipeline
+      that cannot send is the entire point.
+    </p>
+  </article>
+
+  <article class="project">
+    <h3>dropgate</h3>
+    <p class="project-meta">Python, standard library only · <a href="https://github.com/PantoYT/dropgate">repository</a></p>
+    <p>
+      Drop a file, get a tokenised link, send it to someone. One Python file, zero
+      dependencies, and it runs portable off a USB stick with an embeddable interpreter
+      and <code>cloudflared</code> next to it.
+    </p>
+    <p>
+      It runs <strong>two separate servers on purpose</strong>: a public one that serves
+      nothing but <code>/d/&lt;token&gt;</code>, and an admin panel bound to
+      <code>127.0.0.1</code>. Only the public port is ever attached to the tunnel, so the
+      panel cannot be exposed to the internet even by a mistake in configuration. The
+      guarantee is structural rather than a checkbox. Tokens are 128-bit capabilities,
+      comparisons are constant-time, path traversal is closed by reducing every requested
+      name to its basename and checking it against a per-share allowlist, and shares can
+      expire, cap their download count, or burn after the first read.
+    </p>
+  </article>
+</section>
+
+<section>
+  <h2>Other work</h2>
+  <div class="grid">
+
+    <article class="card">
+      <h3>regexplode</h3>
+      <p>
+        A regex engine written from zero with two matchers, backtracking and a Pike VM,
+        running side by side so you can watch one fall off a cliff on input the other
+        handles flat. Validated differentially against the browser's own engine across 35,148
+        patterns and 46 inputs: 1.6 million comparisons, zero divergences.
+      </p>
+      <p class="project-meta"><a href="demos/regexplode/">run it</a> · <a href="https://github.com/PantoYT/regexplode">repository</a></p>
+    </article>
+
+    <article class="card">
+      <h3>particle-life</h3>
+      <p>
+        A few particle types and a matrix of attraction and repulsion between each pair.
+        The rules are trivial and purely local, but iterate them and cells, swarms and
+        something resembling predation fall out on their own. Nothing about those shapes
+        is programmed anywhere.
+      </p>
+      <p class="project-meta"><a href="demos/particle-life/">CPU</a> · <a href="demos/particle-life/gpu.html">GPU</a> · <a href="https://github.com/PantoYT/particle-life">repository</a></p>
+    </article>
+
+    <article class="card">
+      <h3>physarum</h3>
+      <p>
+        Slime mould transport networks on the GPU, running Jones' 2010 agent model with
+        four render passes per step in WebGL2. Thousands of agents leaving and following a trail map
+        until the whole thing solves a maze it was never told about.
+      </p>
+      <p class="project-meta"><a href="demos/physarum/">run it</a> · <a href="https://github.com/PantoYT/physarum">repository</a></p>
+    </article>
+
+    <article class="card">
+      <h3>gitdesk</h3>
+      <p>
+        A panel over <em>every</em> repository on the machine at once, answering the
+        questions a single-repo client never asks: what is committed but not pushed,
+        which working copy is ahead when the same repo lives on a PC and a USB stick, and
+        where a secret is one <code>git add -A</code> away from leaving the building.
+      </p>
+      <p class="project-meta"><a href="https://github.com/PantoYT/gitdesk">repository</a></p>
+    </article>
+
+    <article class="card">
+      <h3>Pontifex</h3>
+      <p>
+        A reactive engine for infrastructure tickets: identify the client, match the
+        report against markdown runbooks, diagnose, then <em>propose</em> a fix that an
+        administrator has to approve before anything executes, behind a hard rail that
+        survives <code>..</code> and symlinks. Tamper-evident hash-chained audit log;
+        prompt injection and destructive instructions get quarantined rather than run.
+      </p>
+      <p class="project-meta">Working engine prototype — input channels and remote execution are still mocked.</p>
+    </article>
+
+    <article class="card">
+      <h3>panto-os</h3>
+      <p>
+        A dark amber system dashboard that runs either as a live wallpaper or in a
+        browser tab: CPU, RAM, disk and temperature rings, Docker containers you can
+        start, stop and read logs from, Tailscale devices, and a day planner that pulls
+        the school timetable in by itself.
+      </p>
+      <p class="project-meta"><a href="https://github.com/PantoYT/panto-os">repository</a></p>
+    </article>
+
+    <article class="card">
+      <h3>VulcanScope</h3>
+      <p>
+        A full export of a school e-register into a single <code>dashboard.html</code>
+        with the data baked in, so it opens offline with no server. Authentication is
+        device pairing with RSA-signed requests against the mobile API, worked out from
+        reverse engineering rather than documentation.
+      </p>
+      <p class="project-meta"><a href="https://github.com/PantoYT/VulcanScope">repository</a></p>
+    </article>
+
+    <article class="card">
+      <h3>kroj</h3>
+      <p>
+        A TrueType engine from scratch: sfnt parser, glyph contours, <code>cmap</code>,
+        kerning from either <code>kern</code> or GPOS, antialiased rasterisation and its
+        own PNG writer. Run against all 337 fonts in <code>C:\Windows\Fonts</code> without
+        a single failure.
+      </p>
+      <p class="project-meta"><a href="https://github.com/PantoYT/kroj">repository</a></p>
+    </article>
+
+    <article class="card">
+      <h3>Sorting</h3>
+      <p>
+        One hundred sorting algorithms, from production-grade to deliberately absurd,
+        with a benchmark harness and a visualiser that animates them side by side.
+      </p>
+      <p class="project-meta"><a href="https://github.com/PantoYT/Sorting">repository</a></p>
+    </article>
+
+  </div>
+</section>
+
+<section class="homelab">
+  <h2>The homelab</h2>
+  <p>
+    One machine, an HP EliteDesk running Ubuntu, carrying roughly 25 Docker containers:
+    self-hosted Git, file storage, media, dashboards, monitoring, and a scheduled updater
+    that only speaks up when something actually changed.
+  </p>
+  <p>
+    Nothing is port-forwarded. Every service reaches the internet through a Cloudflare
+    tunnel and sits behind SSO, administration goes over a private Tailscale mesh, and
+    availability is watched from inside. The claim is checkable without my help: pick any
+    service subdomain on this domain and you will be bounced to a login screen rather than
+    into the service.
+  </p>
+  <p>
+    It has also taught me more about failure than any of the code, including an outage
+    where the fix erased the evidence, which is why I now record configuration state
+    <em>before</em> things break.
+  </p>
+</section>
+
+<section class="contact">
+  <h2>Contact</h2>
+  <p>
+    <a href="mailto:kontakt@panto-dev.com">kontakt@panto-dev.com</a> ·
+    <a href="https://github.com/PantoYT">github.com/PantoYT</a> ·
+    <a href="https://www.linkedin.com/in/wojciech-ha%C5%82asa-bb94743a1">LinkedIn</a>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  <a href="/privacy">Privacy</a>
+  <a href="/terms">Terms</a>
+</footer>
+
+</body>
+</html>

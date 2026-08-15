@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Wojciech Hałasa</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main class="prose">
+
+<h1>Privacy Policy</h1>
+<p class="meta">Wojciech Hałasa · panto-dev.com · last updated August 2026</p>
+
+<h2>Who is responsible</h2>
+<p>
+  This site and the applications described below are run by Wojciech Hałasa, a private
+  individual, not a company. Contact:
+  <a href="mailto:kontakt@panto-dev.com">kontakt@panto-dev.com</a>.
+</p>
+
+<h2>This website</h2>
+<p>
+  This is a static site. It sets no cookies, runs no analytics, embeds no third-party
+  scripts, and has no forms. Nothing you do here is recorded by me. The site is served by
+  Cloudflare Pages, and Cloudflare processes ordinary request data such as IP addresses as
+  part of delivering it.
+</p>
+
+<h2>PKOTracker</h2>
+<p>
+  PKOTracker is a personal tool that reads <strong>my own</strong> bank account so I can
+  track my own finances. It has no other users and no sign-up. If you have arrived at this
+  page from a bank consent screen, that consent is mine, given by me, for my own account.
+</p>
+<p>
+  It reads data through <a href="https://enablebanking.com">Enable Banking</a>, a licensed
+  account information service provider, under the PSD2 access rules. The application is
+  registered in Enable Banking's restricted mode, which can only ever read accounts that
+  have been explicitly linked to it.
+</p>
+
+<h3>What is processed</h3>
+<ul>
+  <li>account identifiers such as IBAN, account name and currency,</li>
+  <li>account balances,</li>
+  <li>transaction history: dates, amounts, currency, counterparty names and payment
+      descriptions.</li>
+</ul>
+
+<h3>Where it is stored</h3>
+<p>
+  In a single SQLite file on my own computer. It is not uploaded anywhere, not sent to any
+  third party, not used for analytics or profiling, not sold, and not shared. There is no
+  server component and no cloud database.
+</p>
+
+<h3>Access is read-only</h3>
+<p>
+  The access granted is account information only. The application cannot initiate a
+  payment, transfer, or any other movement of funds. That capability is not merely
+  disabled: it is not part of the access that was granted.
+</p>
+
+<h3>How long it is kept</h3>
+<p>
+  Until I delete the local database. The bank consent itself expires after at most 180
+  days under PSD2 and has to be renewed deliberately.
+</p>
+
+<h3>Withdrawing consent</h3>
+<p>
+  Consent can be revoked at any time in the bank's own third-party access settings, or by
+  deleting the session through the Enable Banking API. Once revoked, no further data can
+  be fetched.
+</p>
+
+<h2>Other people's data</h2>
+<p>
+  Transaction records unavoidably contain counterparty names. That data stays on my
+  machine, is never published, and is not used for any purpose beyond reading my own
+  account history.
+</p>
+
+<h2>Your rights</h2>
+<p>
+  If you believe I hold data about you and want to ask about it, write to
+  <a href="mailto:kontakt@panto-dev.com">kontakt@panto-dev.com</a>. Note that processing
+  carried out by a natural person purely for personal purposes falls outside the scope of
+  the GDPR, but I will answer regardless.
+</p>
+
+</main>
+
+<footer>
+  <a href="/">Home</a>
+  <a href="/terms">Terms</a>
+</footer>
+
+</body>
+</html>

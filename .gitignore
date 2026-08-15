@@ -1,0 +1,15 @@
+# UWAGA: Cloudflare Pages serwuje KAŻDY plik z tego repo pod publicznym URL-em.
+# Nie ma czegoś takiego jak .cloudflareignore. Ten plik decyduje więc nie tylko
+# o czystości repo, ale o tym, co NIE trafi do internetu.
+# Zasada: to repo zawiera stronę i nic poza tym.
+
+# cache hooka designu (lokalne narzędzie, nie część strony)
+.impeccable/
+
+# systemowe
+Thumbs.db
+.DS_Store
+
+# edytory
+.vscode/
+.idea/

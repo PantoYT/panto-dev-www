@@ -1,0 +1,148 @@
+:root {
+    color-scheme: light dark;
+    --bg: #fbfaf8;
+    --fg: #1c1a17;
+    --muted: #5f5850;
+    --rule: #e2ddd5;
+    --accent: #b4530a;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #16150f;
+        --fg: #ebe6dc;
+        --muted: #a09789;
+        --rule: #2e2b23;
+        --accent: #e08c3c;
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 3rem 1.25rem 5rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.site-header,
+main,
+footer {
+    max-width: 52rem;
+    margin-inline: auto;
+}
+
+main.prose { max-width: 40rem; }
+
+section { margin-top: 3.5rem; }
+
+h1 {
+    font-size: 1.75rem;
+    line-height: 1.2;
+    margin: 0 0 .35rem;
+    letter-spacing: -.01em;
+}
+
+h2 {
+    font-size: 1.05rem;
+    margin: 2.25rem 0 .5rem;
+    letter-spacing: .01em;
+}
+
+p, li { margin: .5rem 0; }
+
+ul { padding-left: 1.15rem; }
+
+a { color: var(--accent); }
+
+.meta {
+    color: var(--muted);
+    font-size: .875rem;
+    margin: 0 0 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.note {
+    margin-top: 2.5rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: .875rem;
+}
+
+footer a { margin-right: 1rem; }
+
+code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .9em;
+}
+
+/* --- header --- */
+
+.handle {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.lede {
+    font-size: 1.1rem;
+    max-width: 38rem;
+    margin: 1rem 0 1.5rem;
+}
+
+.links a { margin-right: 1.5rem; }
+
+/* --- featured projects --- */
+
+.project { margin: 2.75rem 0; }
+
+.project h3 {
+    font-size: 1.3rem;
+    margin: 0 0 .15rem;
+    letter-spacing: -.005em;
+}
+
+.project-meta {
+    color: var(--muted);
+    font-size: .875rem;
+    margin: 0 0 .85rem;
+}
+
+.card .project-meta { margin: .6rem 0 0; }
+
+.aside {
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+/* --- grid of shorter entries --- */
+
+.grid {
+    display: grid;
+    gap: 2rem 2.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    margin-top: 1.5rem;
+}
+
+.card {
+    border-top: 1px solid var(--rule);
+    padding-top: .9rem;
+}
+
+.card h3 {
+    font-size: 1rem;
+    margin: 0 0 .35rem;
+}
+
+.card p { font-size: .94rem; }
