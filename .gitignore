@@ -3,6 +3,16 @@
 # o czystości repo, ale o tym, co NIE trafi do internetu.
 # Zasada: to repo zawiera stronę i nic poza tym.
 
+# sekrety — jawnie tutaj, NIE polegać na globalnym gitignore:
+# ten jest per maszyna, nie jedzie z klonem i nie chroni nikogo poza mną
+.env
+*.env
+config.json
+*.pem
+*.key
+*secret*
+*credentials*
+
 # cache hooka designu (lokalne narzędzie, nie część strony)
 .impeccable/
 
