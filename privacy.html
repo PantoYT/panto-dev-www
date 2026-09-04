@@ -49,6 +49,60 @@
   Any project page that uses a third-party service will mention it.
 </p>
 
+<h2>Short_Forge and TikTok</h2>
+<p>
+  Short_Forge is a quality-review tool for turning long-form footage into a small number of
+  creator-approved short-video drafts. Its TikTok integration is available from the
+  access-controlled creator workspace. It uses TikTok Login Kit only after the creator
+  chooses to connect their own account.
+</p>
+
+<h3>Data requested from TikTok</h3>
+<p>
+  Short_Forge requests the <code>user.info.basic</code> and <code>video.list</code> scopes.
+  They allow it to receive the connected account's TikTok open ID, display name and avatar
+  URL, and metadata for that account's public videos such as title, description, duration,
+  cover URL, embed link and creation time. It does not request engagement counts, private
+  videos, messages, contacts or posting permission, and it does not download the listed
+  TikTok videos.
+</p>
+
+<h3>Why and where it is processed</h3>
+<p>
+  The data is used only to show the connected creator their profile and recent public videos
+  inside the Short_Forge integration workspace. Access and refresh tokens are stored
+  server-side in a local application file and are never exposed to browser JavaScript.
+  Profile data may be cached alongside that token so the workspace can show connection
+  status. This data is not sold, used for advertising, combined with data from other
+  projects or used to train a model.
+</p>
+
+<h3>Cookies and retention</h3>
+<p>
+  The public Short_Forge information pages use no analytics or advertising cookies. The
+  protected integration workspace sets one first-party, secure, HttpOnly session cookie
+  named <code>shortforge_review</code>. It authenticates the current review session and
+  carries no TikTok access token. The server forgets web sessions when the application
+  restarts. TikTok tokens and cached profile data are kept until the creator disconnects,
+  the authorization expires, or the local application data is deleted.
+</p>
+
+<h3>Disconnecting and deletion</h3>
+<p>
+  The creator can use <strong>Disconnect account</strong> in Short_Forge at any time. The
+  application asks TikTok to revoke the token and then removes its local token, cached
+  profile and pending OAuth state. Authorization can also be removed in TikTok's own
+  security settings. To ask whether any Short_Forge data remains or request deletion,
+  contact <a href="mailto:contact@panto-dev.com">contact@panto-dev.com</a>.
+</p>
+
+<h3>Processors</h3>
+<p>
+  TikTok processes login, consent and TikTok account data under its own privacy terms.
+  Cloudflare carries ordinary network data while providing DNS, TLS and traffic delivery
+  for the public site. No separate analytics provider is used.
+</p>
+
 <h2>Your rights</h2>
 <p>
   If you believe I hold data about you and want to ask about it, write to
