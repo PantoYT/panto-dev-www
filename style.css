@@ -53,6 +53,8 @@ h2 { font-size: 15px; font-weight: 400; color: var(--text); margin: 0 0 22px; }
 .prompt { margin: 0 0 22px; color: var(--text); }
 .fetch-body { display: flex; gap: 40px; align-items: flex-start; }
 .logo { margin: 4px 0 0; color: var(--accent); font: 700 15px/1.2 var(--mono); }
+/* the gear: half-block pixels, a cell 0.5 x 1 em so each pixel is square */
+.logo.gear { font: 16px/1 var(--mono); letter-spacing: -0.1em; margin: 0; }
 .info h1 { margin: 0; font-size: 19px; font-weight: 700; }
 .sep { margin: 2px 0 8px; color: var(--dim); }
 dl { display: grid; grid-template-columns: max-content 1fr; gap: 1px 18px; margin: 0; }
