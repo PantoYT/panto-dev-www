@@ -77,8 +77,8 @@
   </div>
 
   <figure class="screen">
-    <iframe id="termwall-demo" src="demos/termwall/index.html?demo&amp;distro=cycle&amp;bg=171717&amp;accent=b5f4e7&amp;secondary=7faca3&amp;text=939fa1&amp;dim=4b5252&amp;faint=242626" title="termwall in demo mode: a live system-stats wallpaper with made-up stats" loading="eager"></iframe>
-    <figcaption>termwall, running in this page with made-up stats. <a href="demos/termwall/index.html?demo&amp;distro=cycle">full screen</a></figcaption>
+    <iframe id="termwall-demo" src="demos/termwall/?demo&amp;distro=cycle&amp;bg=171717&amp;accent=b5f4e7&amp;secondary=7faca3&amp;text=939fa1&amp;dim=4b5252&amp;faint=242626" title="termwall in demo mode: a live system-stats wallpaper with made-up stats" loading="eager"></iframe>
+    <figcaption>termwall, running in this page with made-up stats. <a href="demos/termwall/?demo&amp;distro=cycle">full screen</a></figcaption>
   </figure>
 </section>
 
@@ -136,7 +136,7 @@
   <h2><span class="t">$</span> run --here</h2>
   <div class="demos">
     <figure>
-      <a class="frame termwall" href="demos/termwall/index.html?demo&amp;layout=board"><span>termwall, board layout</span></a>
+      <a class="frame termwall" href="demos/termwall/?demo&amp;layout=board"><span>termwall, board layout</span></a>
       <figcaption>The board layout: boxes like btop. Every layout and theme can be tried in the demo through the address: <code>?demo&amp;layout=htop</code>.</figcaption>
     </figure>
     <figure>
@@ -183,7 +183,7 @@ function apply(name) {
   select.value = name;
   // the demo takes the same palette through its address (demo mode only)
   const pal = KEYS.map(k => k + "=" + t[k].slice(1)).join("&");
-  const url = "demos/termwall/index.html?demo&distro=cycle&" + pal + (crt.checked ? "&effects=crt,glow" : "");
+  const url = "demos/termwall/?demo&distro=cycle&" + pal + (crt.checked ? "&effects=crt,glow" : "");
   if (demo.getAttribute("src") !== url) demo.src = url;  // the default is already in the HTML: no second load
 }
 select.addEventListener("change", () => { store.set("theme", select.value); apply(select.value); });
