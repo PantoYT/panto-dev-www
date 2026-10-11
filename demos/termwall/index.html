@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>termwall</title>
+<style>
+:root{
+  --bg:#171717; --mint:#b5f4e7; --teal:#7faca3; --grey:#939fa1;
+  --dim:#4b5252; --faint:#242626;
+  --font:"Cascadia Mono","Cascadia Code","JetBrains Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:var(--bg);overflow:hidden}
+/* bundled fonts (SIL OFL 1.1, licenses in fonts/), so every "font" works without installing one */
+@font-face{font-family:"tw JetBrains Mono";src:url(fonts/JetBrainsMono-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"tw JetBrains Mono";src:url(fonts/JetBrainsMono-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"tw Fira Code";src:url(fonts/FiraCode-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"tw Fira Code";src:url(fonts/FiraCode-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"tw Iosevka Term";src:url(fonts/IosevkaTerm-Regular.woff2) format("woff2")}
+body{color:var(--grey);font:18px/1.34 var(--font);-webkit-font-smoothing:antialiased}
+/* designed for 1920×1080; scaled to fit whatever screen it lands on */
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+.layout{position:absolute;inset:0;display:none}
+body.L-fetch #fetch, body.L-board #board, body.L-minimal #minimal, body.L-htop #htop, body.L-portrait #portrait,
+body.L-phone #phone, body.L-logo #logo{display:block}
+.k{color:var(--mint)} .t{color:var(--teal)} .d{color:var(--dim)} .g{color:var(--grey)}
+.cursor{display:inline-block;width:.6em;height:1.1em;background:var(--mint);vertical-align:-.18em;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+pre.logo{font:inherit;font-size:17px;line-height:1.22;white-space:pre}
+pre.logo.img{line-height:1;letter-spacing:0}  /* logo = image: half blocks must touch */
+.f{color:var(--faint)}
+pre.logo .g{color:var(--grey)}
+.title{font-size:22px;font-weight:700}
+.title .at{color:var(--grey);font-weight:400}
+.sep{color:var(--dim);margin:2px 0 10px}
+.row{display:flex;white-space:nowrap}
+.row .key{color:var(--mint);width:140px;flex:none}
+.row .val{color:var(--grey);overflow:hidden;text-overflow:ellipsis}
+.bar{color:var(--teal);letter-spacing:-1px}
+.bar .e{color:var(--faint)}
+.pct{color:var(--mint)}
+.swatches{display:flex;margin-top:10px}
+.swatches span{width:46px;height:22px}
+h3{font-size:15px;font-weight:400;color:var(--dim);margin-bottom:6px;letter-spacing:.06em}
+h3 b{color:var(--teal);font-weight:400}
+.cores{display:grid;grid-template-columns:repeat(12,1fr);gap:6px 10px;font-size:15px}
+.core{display:flex;flex-direction:column;align-items:center}
+.core .col{height:40px;width:14px;background:var(--faint);position:relative}
+.core .col i{position:absolute;left:0;right:0;bottom:0;background:var(--teal)}
+.core .col.hot i{background:var(--mint)}
+.core small{color:var(--dim);font-size:12px;margin-top:3px}
+.spark{font-size:20px;line-height:1;letter-spacing:-2px;color:var(--teal);white-space:nowrap;overflow:hidden}
+.spark.m{color:var(--mint)}
+.proc{width:100%;border-collapse:collapse;font-size:16px}
+.proc th{color:var(--dim);font-weight:400;text-align:left;padding:0 0 4px}
+.proc td{padding:1px 0;white-space:nowrap}
+.proc td.n{color:var(--grey);max-width:300px;overflow:hidden;text-overflow:ellipsis}
+.proc td.c{color:var(--mint);text-align:right;width:80px}
+.proc td.m{color:var(--teal);text-align:right;width:110px}
+.status{position:absolute;font-size:15px;color:var(--dim)}
+.status .ok{color:var(--teal)} .status .bad{color:var(--mint)}
+.now{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── the clock: one SVG per glyph, so digits never show seams or gaps when scaled ── */
+.clock .time{display:flex;align-items:flex-end;gap:calc(var(--ch) * .14)}
+.clock .time svg{height:var(--ch);width:auto;display:block;overflow:visible}
+.clock .time .on{fill:var(--mint)} .clock .time .col{fill:var(--teal)}
+.clock .date{color:var(--teal);letter-spacing:.14em;text-transform:lowercase}
+.clock .sec{color:var(--dim)}
+
+/* ── layout: fetch (fastfetch screen) ── */
+#fetch{padding:84px 140px 0 140px}
+#fetch .prompt{font-size:19px;margin-bottom:26px}
+#fetch .prompt .path{color:var(--teal)} #fetch .prompt .arrow{color:var(--mint)}
+#fetch .top{display:flex;gap:64px;align-items:flex-start}
+#fetch .info{flex:1;min-width:0}
+#fetch .panels{display:grid;grid-template-columns:1.25fr 1fr;gap:56px;margin-top:22px}
+#fetch .clock{align-self:flex-end;margin-left:auto;text-align:right;--ch:84px;flex:none}
+#fetch .clock .time{justify-content:flex-end}
+#fetch .clock .date{font-size:18px;margin-top:16px}
+#fetch .clock .sec{font-size:15px;margin-top:2px}
+#fetch .now{text-align:right;max-width:460px;margin:22px 0 0 auto}
+#fetch .status{left:140px;bottom:92px}
+
+/* ── layout: board (btop-like boxes) ── */
+#board{padding:72px 110px 90px}
+body.L-board #board{display:flex;flex-direction:column}
+#board .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:34px}
+#board .clock{--ch:84px}  /* the fetch clock's size everywhere: bigger blocks look crude */
+#board .clock .date{font-size:20px;margin-top:18px}
+#board .clock .sec{font-size:16px}
+#board .who{text-align:right;font-size:17px;line-height:1.6}
+#board .who .title{font-size:24px}
+#board .grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:26px 30px;flex:1;min-height:0}
+#board fieldset{border:1.5px solid var(--dim);padding:10px 22px 16px;min-width:0;min-height:0;overflow:hidden}
+#board legend{padding:0 10px;color:var(--teal);font-size:15px;letter-spacing:.1em}
+#board legend b{color:var(--mint);font-weight:400}
+#board .big{font-size:40px;color:var(--mint);line-height:1.1;margin:4px 0 8px}
+#board .big small{font-size:16px;color:var(--dim)}
+#board .kv{display:flex;justify-content:space-between;gap:14px;white-space:nowrap;font-size:16px}
+#board .kv span:last-child{overflow:hidden;text-overflow:ellipsis}
+#board .kv span:first-child{color:var(--dim)}
+#board .cores{grid-template-columns:repeat(16,1fr);gap:6px 6px;margin-top:14px}
+#board .core .col{height:46px;width:12px}
+#board .spark{font-size:22px}
+#board .disk{font-size:16px;margin-bottom:10px}
+#board .disk .bar{display:block;font-size:15px}
+#board .now{max-width:640px;text-align:right;margin-top:8px}
+#board .status{left:110px;bottom:40px}
+
+/* ── layout: minimal (a big clock) ── */
+#minimal{display:none;text-align:center}
+body.L-minimal #minimal{display:flex;flex-direction:column;align-items:center;justify-content:center}
+#minimal .clock{--ch:84px;display:flex;flex-direction:column;align-items:center}
+#minimal .clock .date{font-size:22px;margin-top:24px;letter-spacing:.24em}
+#minimal .clock .sec{font-size:20px;margin-top:6px}
+#minimal .line{margin-top:40px;font-size:20px;letter-spacing:.06em;color:var(--dim)}
+#minimal .line b{color:var(--mint);font-weight:400}
+#minimal .line i{font-style:normal;color:var(--teal)}
+#minimal .spark{margin-top:18px;font-size:26px;color:var(--faint)}
+#minimal .spark .hi{color:var(--teal)}
+#minimal .now{margin-top:26px;max-width:900px}
+#minimal .status{left:0;right:0;bottom:40px}
+
+/* ── layout: htop (meters on top, a big process table) ── */
+#htop{padding:64px 90px}
+#htop .hmeters{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:0 48px;font-size:18px;line-height:1.5}
+#htop .meter{display:flex;white-space:pre}
+#htop .meter .ml{color:var(--teal);width:3.2em;text-align:right;padding-right:.4em}
+#htop .meter .mb{color:var(--text-strong, var(--grey));font-weight:700}
+#htop .meter .mf{color:var(--mint)}
+#htop .meter .mf.hot{color:var(--teal)}
+#htop .meter .me{color:var(--faint)}
+#htop .meter .mv{color:var(--grey)}
+#htop .hinfo{margin-top:6px;color:var(--dim)} #htop .hinfo b{color:var(--mint);font-weight:400}
+#htop .clock{--ch:56px;margin-top:22px}
+#htop .clock .date{font-size:16px;margin-top:10px}
+#htop .clock .sec{font-size:14px}
+#htop .htable{width:100%;border-collapse:collapse;margin-top:40px;font-size:19px}
+#htop .htable th{background:var(--teal);color:var(--bg);font-weight:700;text-align:left;padding:2px 12px}
+#htop .htable td{padding:3px 12px;white-space:nowrap;color:var(--grey)}
+#htop .htable tr:first-child td{background:var(--faint);color:var(--mint)}
+#htop .htable .r{text-align:right}
+#htop .htable .c{color:var(--mint)}
+#htop .htable .m{color:var(--teal)}
+#htop .now{margin-top:18px}
+#htop .status{left:90px;bottom:40px}
+
+/* ── layout: portrait (a monitor turned on its side: 1080×1920) ── */
+/* logo: the logo as big as the screen allows, with who and where under it */
+body.L-logo #logo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px}
+#logo pre.logo{width:fit-content}
+#logo .title{font-size:40px}
+#logo .os{font-size:24px;color:var(--dim);margin-top:-18px}
+#logo .swatches span{width:64px;height:22px}
+#logo .status{left:90px;bottom:60px}
+/* phone: few things, big, for a 6-inch screen (termwall share picks it when the phone is upright) */
+#phone{padding:120px 70px 110px;font-size:28px}
+body.L-phone #phone{display:flex;flex-direction:column;justify-content:space-between}
+#phone .clock{--ch:124px;display:flex;flex-direction:column;align-items:center}
+#phone .clock .date{font-size:32px;margin-top:26px;letter-spacing:.2em}
+#phone .clock .sec{font-size:24px;margin-top:4px}
+#phone .who{text-align:center;font-size:26px}
+#phone .who .title{font-size:32px}
+#phone .who .d{margin-top:6px}
+#phone .gauges{display:grid;grid-template-columns:1fr 1fr;gap:44px 44px}
+#phone .gauge .gl{color:var(--dim);font-size:22px;letter-spacing:.14em}
+#phone .gauge .gv{color:var(--mint);font-size:76px;line-height:1.05}
+#phone .gauge .gv small{font-size:32px;color:var(--teal)}
+#phone .gauge .bar{font-size:30px;display:block;margin-top:6px}
+#phone .gauge .spark{font-size:22px;margin-top:8px;color:var(--teal)}
+#phone .gauge .gs{color:var(--grey);font-size:22px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#phone .pnet{display:grid;grid-template-columns:1fr 1fr;gap:0 44px}
+#phone .pnet .big{font-size:44px;color:var(--mint)}
+#phone .pnet .spark{font-size:22px;color:var(--teal)}
+#phone .pdisks .disk{display:flex;justify-content:space-between;align-items:baseline;font-size:24px;margin-top:10px}
+#phone .pdisks .bar{font-size:26px}
+#phone .pprocs{width:100%;border-collapse:collapse;font-size:25px}
+#phone .pprocs td{padding:5px 0;white-space:nowrap} #phone .pprocs .c{color:var(--mint);text-align:right}
+#phone .pprocs .m{color:var(--teal);text-align:right;width:6.5em}
+#phone h3{font-size:22px;margin-bottom:12px}
+#phone .status{left:70px;bottom:46px;font-size:20px}
+#portrait{padding:110px 90px}
+body.L-portrait #portrait{display:flex;flex-direction:column;justify-content:center}
+#portrait .clock{--ch:84px;display:flex;flex-direction:column;align-items:center;margin-bottom:56px}
+#portrait .clock .date{font-size:22px;margin-top:22px;letter-spacing:.2em}
+#portrait .clock .sec{font-size:18px;margin-top:4px}
+#portrait pre.logo{width:fit-content;margin:0 auto 34px}
+#portrait .title{font-size:24px}
+#portrait .panel{margin-top:30px}
+#portrait .cores{grid-template-columns:repeat(16,1fr);gap:6px 6px}
+#portrait .core .col{height:46px;width:12px}
+#portrait .now{margin-top:30px;text-align:center}
+#portrait .status{left:90px;bottom:60px}
+
+/* ── what to hide, effects ── */
+body.hide-prompt [data-sec~="prompt"], body.hide-logo [data-sec~="logo"], body.hide-info [data-sec~="info"],
+body.hide-clock [data-sec~="clock"], body.hide-cpu [data-sec~="cpu"], body.hide-cores [data-sec~="cores"],
+body.hide-gpu [data-sec~="gpu"], body.hide-memory [data-sec~="memory"], body.hide-disks [data-sec~="disks"],
+body.hide-network [data-sec~="network"], body.hide-procs [data-sec~="procs"], body.hide-swatches [data-sec~="swatches"],
+body.hide-music [data-sec~="music"], body.hide-status [data-sec~="status"]{display:none !important}
+/* scanlines and a soft vignette over everything; pointer-events off, it's only paint */
+body.fx-crt #stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:10;
+  background:repeating-linear-gradient(to bottom, rgba(0,0,0,.22) 0 1px, transparent 1px 3px),
+             radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.45) 100%)}
+body.fx-glow .k, body.fx-glow .pct, body.fx-glow .title, body.fx-glow .big, body.fx-glow .t,
+body.fx-glow .bar, body.fx-glow .spark, body.fx-glow .meter .mf{text-shadow:0 0 7px currentColor}
+body.fx-glow .clock .time svg{filter:drop-shadow(0 0 7px var(--mint))}
+/* shade bars: the filled part runs from secondary to accent, whatever its length */
+body.bars-shade .bar .f{background:linear-gradient(90deg,var(--teal),var(--mint));-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+/* more tube: each is paint only (pointer-events off), animated with transform/opacity */
+.fxl{display:none;position:absolute;inset:0;pointer-events:none;z-index:11;overflow:hidden}
+body.fx-flicker #stage{animation:fxflicker 4s steps(1) infinite}
+@keyframes fxflicker{0%{opacity:1}9%{opacity:.86}10%{opacity:1}11%{opacity:.9}12%{opacity:1}
+  46%{opacity:.92}47%{opacity:1}70%{opacity:.84}71%{opacity:.97}72%{opacity:.88}73%{opacity:1}}
+body.fx-roll #fx-roll{display:block}
+#fx-roll::before{content:"";position:absolute;left:0;right:0;top:-220px;height:220px;
+  background:linear-gradient(to bottom,transparent,rgba(255,255,255,.035) 45%,rgba(255,255,255,.05) 50%,transparent);
+  animation:fxroll 9s linear infinite}
+@keyframes fxroll{to{transform:translateY(1500px)}}
+body.fx-chroma #stage{text-shadow:-1.2px 0 rgba(255,50,90,.45),1.2px 0 rgba(40,220,255,.45)}
+body.fx-curve #fx-curve{display:block;border-radius:48px;
+  box-shadow:inset 0 0 110px 18px rgba(0,0,0,.6),0 0 0 80px #000}
+body.fx-noise #fx-noise{display:block;opacity:.07}
+#fx-noise::before{content:"";position:absolute;inset:-100px;animation:fxnoise .6s steps(3) infinite;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes fxnoise{0%{transform:translate(0,0)}33%{transform:translate(-60px,35px)}66%{transform:translate(40px,-50px)}}
+</style>
+</head>
+<body class="L-fetch">
+<div id="stage">
+  <div class="fxl" id="fx-roll"></div><div class="fxl" id="fx-curve"></div><div class="fxl" id="fx-noise"></div>
+
+  <!-- fetch: the fastfetch screen -->
+  <section class="layout" id="fetch">
+    <div class="prompt" data-p="prompt" data-sec="prompt"></div>
+    <div class="top">
+      <pre class="logo" data-p="logo" data-sec="logo"></pre>
+      <div class="info" data-sec="info">
+        <div class="title" data-p="title"></div>
+        <div class="sep" data-p="sep">-----------</div>
+        <div data-p="rows"></div>
+        <div class="swatches" data-p="swatches" data-sec="swatches"></div>
+      </div>
+      <div class="clock" data-clock data-sec="clock"><div class="time"></div><div class="date"></div><div class="sec"></div>
+        <div class="now" data-p="now" data-sec="music"></div></div>
+    </div>
+    <div class="panels">
+      <div>
+        <div data-sec="cpu"><h3>CPU · <b data-p="cpu-sum">0%</b> · 60s</h3>
+        <div class="spark" data-p="spark-cpu"></div></div>
+        <div data-sec="cores"><h3 style="margin-top:12px">CORES · <b data-p="core-count">0</b> threads</h3>
+        <div class="cores" data-p="cores"></div></div>
+      </div>
+      <div>
+        <div data-sec="gpu"><h3>GPU · <b data-p="gpu-sum">-</b> · 60s</h3>
+        <div class="spark m" data-p="spark-gpu"></div></div>
+        <div data-sec="procs"><h3 style="margin-top:12px">TOP · <b data-p="proc-count">0</b> processes</h3>
+        <table class="proc"><thead><tr><th>name</th><th style="text-align:right">cpu</th><th style="text-align:right">mem</th></tr></thead><tbody data-p="procs"></tbody></table></div>
+      </div>
+    </div>
+    <div class="status" data-p="status" data-sec="status">connecting to termwall api…</div>
+  </section>
+
+  <!-- board: boxes, like btop -->
+  <section class="layout" id="board">
+    <div class="head">
+      <div class="clock" data-clock data-sec="clock"><div class="time"></div><div class="date"></div><div class="sec"></div></div>
+      <div class="who">
+        <div class="title" data-p="title" data-sec="info"></div>
+        <div data-p="who" data-sec="info"></div>
+        <div class="now" data-p="now" data-sec="music"></div>
+      </div>
+    </div>
+    <div class="grid">
+      <fieldset data-sec="cpu"><legend>CPU · <b data-p="cpu-sum">0%</b></legend>
+        <div class="spark" data-p="spark-cpu"></div>
+        <div class="cores" data-p="cores" data-sec="cores"></div>
+        <div class="kv" style="margin-top:12px"><span>model</span><span data-p="cpu-model"></span></div>
+      </fieldset>
+      <fieldset data-sec="gpu"><legend>GPU · <b data-p="gpu-sum">-</b></legend>
+        <div class="spark m" data-p="spark-gpu"></div>
+        <div data-p="gpu-box"></div>
+      </fieldset>
+      <fieldset data-sec="memory"><legend>MEMORY · <b data-p="mem-sum">0%</b></legend>
+        <div data-p="mem-box"></div>
+      </fieldset>
+      <fieldset data-sec="disks"><legend>DISKS</legend><div data-p="disk-box"></div></fieldset>
+      <fieldset data-sec="network"><legend>NETWORK</legend><div data-p="net-box"></div></fieldset>
+      <fieldset data-sec="procs"><legend>PROCESSES · <b data-p="proc-count">0</b></legend>
+        <table class="proc"><tbody data-p="procs"></tbody></table>
+      </fieldset>
+    </div>
+    <div class="status" data-p="status" data-sec="status"></div>
+  </section>
+
+  <!-- minimal: a big clock and one line -->
+  <section class="layout" id="minimal">
+    <div class="clock" data-clock data-sec="clock"><div class="time"></div><div class="date"></div><div class="sec"></div></div>
+    <div class="line" data-p="line"></div>
+    <div class="spark" data-p="spark-min" data-sec="cpu"></div>
+    <div class="now" data-p="now" data-sec="music"></div>
+    <div class="status" data-p="status" data-sec="status"></div>
+  </section>
+
+  <!-- htop: meters and a big process table -->
+  <section class="layout" id="htop">
+    <div class="hmeters">
+      <div data-p="hcores-a" data-sec="cpu cores"></div>
+      <div data-p="hcores-b" data-sec="cpu cores"></div>
+      <div>
+        <div data-p="hmeters"></div>
+        <div class="hinfo" data-p="hinfo" data-sec="info"></div>
+        <div class="clock" data-clock data-sec="clock"><div class="time"></div><div class="date"></div><div class="sec"></div></div>
+      </div>
+    </div>
+    <table class="htable" data-sec="procs">
+      <thead><tr><th>NAME</th><th class="r">COUNT</th><th class="r">CPU%</th><th class="r">MEM</th><th>CPU</th></tr></thead>
+      <tbody data-p="hprocs"></tbody></table>
+    <div class="now" data-p="now" data-sec="music"></div>
+    <div class="status" data-p="status" data-sec="status"></div>
+  </section>
+
+  <!-- logo: the logo, huge; for a monitor that only has to look good -->
+  <section class="layout" id="logo">
+    <pre class="logo" data-p="logo" data-sec="logo"></pre>
+    <div class="title" data-p="title" data-sec="info"></div>
+    <div class="os" data-p="logo-os" data-sec="info"></div>
+    <div class="swatches" data-p="swatches" data-sec="swatches"></div>
+    <div class="status" data-p="status" data-sec="status"></div>
+  </section>
+
+  <!-- phone: big gauges and a short list, for a phone on a stand -->
+  <section class="layout" id="phone">
+    <div class="clock" data-clock data-sec="clock"><div class="time"></div><div class="date"></div><div class="sec"></div></div>
+    <div class="who" data-sec="info"><div class="title" data-p="title"></div><div class="d" data-p="phone-os"></div></div>
+    <div class="gauges" data-p="phone-gauges"></div>
+    <div data-sec="network"><h3>NETWORK</h3><div class="pnet" data-p="phone-net"></div></div>
+    <div class="pdisks" data-sec="disks"><h3>DISKS</h3><div data-p="phone-disks"></div></div>
+    <div data-sec="procs"><h3>TOP · <b data-p="proc-count">0</b> processes</h3><table class="pprocs"><tbody data-p="phone-procs"></tbody></table></div>
+    <div class="status" data-p="status" data-sec="status"></div>
+  </section>
+
+  <!-- portrait: everything stacked, for a monitor on its side -->
+  <section class="layout" id="portrait">
+    <div class="clock" data-clock data-sec="clock"><div class="time"></div><div class="date"></div><div class="sec"></div></div>
+    <pre class="logo" data-p="logo" data-sec="logo"></pre>
+    <div class="info" data-sec="info">
+      <div class="title" data-p="title"></div>
+      <div class="sep" data-p="sep">-----------</div>
+      <div data-p="rows"></div>
+      <div class="swatches" data-p="swatches" data-sec="swatches"></div>
+    </div>
+    <div class="panel" data-sec="cpu"><h3>CPU · <b data-p="cpu-sum">0%</b> · 60s</h3><div class="spark" data-p="spark-cpu"></div></div>
+    <div class="panel" data-sec="cores"><h3>CORES · <b data-p="core-count">0</b> threads</h3><div class="cores" data-p="cores"></div></div>
+    <div class="panel" data-sec="gpu"><h3>GPU · <b data-p="gpu-sum">-</b> · 60s</h3><div class="spark m" data-p="spark-gpu"></div></div>
+    <div class="panel" data-sec="procs"><h3>TOP · <b data-p="proc-count">0</b> processes</h3>
+      <table class="proc"><thead><tr><th>name</th><th style="text-align:right">cpu</th><th style="text-align:right">mem</th></tr></thead><tbody data-p="procs"></tbody></table></div>
+    <div class="now" data-p="now" data-sec="music"></div>
+    <div class="status" data-p="status" data-sec="status"></div>
+  </section>
+</div>
+
+<script src="token.js"></script>
+<script src="logos.js"></script>
+<script>
+// token.js is written by termwall_api.py at start; without the token the API answers 403.
+const TOKEN = encodeURIComponent(window.TERMWALL_TOKEN || "");
+const API = window.TERMWALL_API || "http://127.0.0.1:9002/stats";  // "stats" when served by termwall share
+const SHARE = window.TERMWALL_SHARE === true;
+// Wallpaper Engine: the "termwall screen" property (project.json), set per monitor in WE;
+// the server answers with that monitor's [screen.N] settings
+let SCREEN = /^\d{1,2}$/.test(new URLSearchParams(location.search).get("screen") || "") ? new URLSearchParams(location.search).get("screen") : null;
+window.wallpaperPropertyListener = {applyUserProperties(p){ if (p.screen) { SCREEN = String(p.screen.value); styleKey = ""; if (!DEMO) pollTheme(); } }};
+function withToken(url){ return url + "?t=" + TOKEN + (SCREEN ? "&screen=" + SCREEN : ""); }
+// API restarted → new token → 403. Reload (re-reads token.js), at most once per 10 s.
+function onForbidden(){
+  let last = 0;
+  try { last = +sessionStorage.getItem("tw-reload") || 0; } catch (e) { return; }  // no storage → no reload loop
+  if (Date.now() - last > 10000) {
+    try { sessionStorage.setItem("tw-reload", String(Date.now())); } catch (e) {}
+    location.reload();
+  }
+}
+// every copy of a part (the layouts share them) gets the same content
+function put(part, html){ document.querySelectorAll(`[data-p="${part}"]`).forEach(el => { el.innerHTML = html; }); }
+
+// The stage is designed at 1920×1080 (portrait: 1080×1920) and scaled to the screen, centered:
+// on 16:10 or 21:9 the spare band is split evenly. "scale" makes the design area smaller or
+// larger, so everything on it grows or shrinks.
+function stageSize(){
+  const sc = Number(style.scale) || 1;
+  let [w, h] = ["portrait", "phone"].includes(currentLayout()) ? [1080, 1920] : [1920, 1080];
+  if (SHARE) {  // a phone fills its whole screen: the design area takes the screen's proportions
+    const r = innerHeight / innerWidth;
+    if (h > w) h = Math.max(1440, Math.round(w * r)); else w = Math.max(1440, Math.round(h / r));
+  }
+  return [Math.round(w / sc), Math.round(h / sc)];
+}
+function fit(){
+  const [w, h] = stageSize(), stage = document.getElementById("stage");
+  stage.style.width = w + "px"; stage.style.height = h + "px";
+  const s = Math.min(innerWidth / w, innerHeight / h);
+  stage.style.transform = `translate(${(innerWidth - w * s) / 2}px, ${(innerHeight - h * s) / 2}px) scale(${s})`;
+}
+addEventListener("resize", () => { showLayout(); fit(); if (SHARE && last) render(last); });
+if (SHARE) {  // a tap goes fullscreen; the screen stays on where the browser allows it (HTTPS only)
+  addEventListener("click", () => { document.documentElement.requestFullscreen?.().catch(() => {}); });
+  const wake = () => navigator.wakeLock?.request("screen").catch(() => {});
+  wake(); document.addEventListener("visibilitychange", () => { if (!document.hidden) wake(); });
+}
+
+// ── the look: layout, clock, bars (from termwall.json / theme.json through the API) ──
+const LAYOUTS = ["fetch", "board", "minimal", "htop", "portrait", "phone", "logo"];
+const ROTATION = ["fetch", "board", "minimal", "htop"];  // "rotate" cycles the landscape ones
+let style = {layout: "fetch", bars: "blocks", rotate: 0, clock: "24h", seconds: true, date: "long", hide: [],
+             private: false, font: "cascadia", scale: 1, effects: [], logo: "auto"}, styleKey = "";
+const URLQ = new URLSearchParams(location.search);
+// ?layout=htop&hide=gpu,procs&effects=crt&font=jetbrains&clock=12h... (handy in a browser; wins over the files)
+const URL_STYLE = {};
+for (const k of ["layout", "bars", "clock", "date", "font", "logo", "prompt", "logo_chars", "logo_colors"]) if (URLQ.get(k) !== null) URL_STYLE[k] = URLQ.get(k);
+if (URLQ.get("logo_width")) URL_STYLE.logo_width = Number(URLQ.get("logo_width"));
+for (const k of ["hide", "effects"]) if (URLQ.get(k) !== null) URL_STYLE[k] = URLQ.get(k).split(",").filter(Boolean);
+for (const k of ["seconds", "private"]) if (URLQ.get(k) !== null) URL_STYLE[k] = ["on", "1", "true"].includes(URLQ.get(k));
+if (URLQ.get("scale")) URL_STYLE.scale = Math.min(1.1, Math.max(0.8, Number(URLQ.get("scale")) || 1));
+const FONTS = {
+  cascadia: '"Cascadia Mono","Cascadia Code",Consolas,monospace',
+  jetbrains: '"tw JetBrains Mono","JetBrains Mono","Cascadia Mono",Consolas,monospace',
+  fira: '"tw Fira Code","Fira Code","Cascadia Mono",Consolas,monospace',
+  iosevka: '"tw Iosevka Term","Iosevka Term","Cascadia Mono",Consolas,monospace',
+  consolas: 'Consolas,"Cascadia Mono",monospace',
+  system: 'monospace',  // the browser's own monospace font (Consolas on Windows)
+};
+const SECTIONS = ["prompt", "logo", "info", "clock", "cpu", "cores", "gpu", "memory", "disks", "network",
+                  "procs", "swatches", "music", "status"];
+function applyStyle(st){
+  if (!st) return;
+  st = {...style, ...st, ...URL_STYLE};
+  const key = JSON.stringify(st);
+  if (key === styleKey) return;
+  styleKey = key; style = st;
+  const b = document.body, hidden = new Set(style.hide || []), fx = new Set(style.effects || []);
+  for (const sec of SECTIONS) b.classList.toggle("hide-" + sec, hidden.has(sec));
+  for (const e of ["crt", "glow", "flicker", "roll", "chroma", "curve", "noise"]) b.classList.toggle("fx-" + e, fx.has(e));
+  for (const k of ["blocks", "shade", "dots", "line"]) b.classList.toggle("bars-" + k, (style.bars || "blocks") === k);
+  document.documentElement.style.setProperty("--font", FONTS[style.font] || FONTS.cascadia);
+  showLayout(); fit(); tick();
+  if (last) render(last);
+}
+function currentLayout(){
+  // on a phone the screen decides: upright = portrait, sideways = the chosen layout
+  if (SHARE && innerHeight > innerWidth) return "phone";
+  const want = SHARE && (style.layout === "portrait" || style.layout === "phone") ? "fetch" : style.layout;
+  if (!style.rotate || !ROTATION.includes(want)) return LAYOUTS.includes(want) ? want : "fetch";
+  return ROTATION[(ROTATION.indexOf(want) + Math.floor(Date.now() / 60000 / style.rotate)) % ROTATION.length];
+}
+function showLayout(){
+  const want = "L-" + currentLayout();
+  if (!document.body.classList.contains(want)) {
+    document.body.classList.remove(...LAYOUTS.map(l => "L-" + l));
+    document.body.classList.add(want);
+    fit();  // portrait has its own stage size
+  }
+}
+
+// ── logos: fastfetch's Windows panes, a Tux for Linux ──
+const WIN_LOGO = (() => {
+  const w = 17, h = 8, pane = "/".repeat(w), gap = "  ";
+  const line = c => `<span class="${c}">${pane}</span>${gap}<span class="${c}">${pane}</span>`;
+  const rows = [];
+  for (let i = 0; i < h; i++) rows.push(line("k"));
+  rows.push("");
+  for (let i = 0; i < h; i++) rows.push(line("t"));
+  return rows.join("\n");
+})();
+const TUX = [
+  ["k", "        #####"], ["k", "       #######"], ["k", "       ##O#O##"], ["k", "       #VVVVV#"],
+  ["k", "     ##  VVV  ##"], ["t", "    #          ##"], ["t", "   #            ##"], ["t", "   #            ###"],
+  ["t", "  QQ#           ##Q"], ["t", "QQQQQQ#       #QQQQQQ"], ["t", "QQQQQQQ#     #QQQQQQQ"],
+  ["t", "  QQQQQ#######QQQQQ"]].map(([c, l]) => `<span class="${c}">${l}</span>`).join("\n");
+
+const gib = b => (b/1024**3).toFixed(b >= 100*1024**3 ? 0 : 2) + " GiB";
+const rate = b => b >= 1024**2 ? (b/1024**2).toFixed(1)+" MiB/s" : (b/1024).toFixed(0)+" KiB/s";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// Distro logos: fastfetch's, from logos.js (tools/fetch_logos.py). Chosen by os-release ID,
+// then ID_LIKE (an Arch derivative without its own logo gets Arch's), else the Tux.
+const DISTRO_LOGOS = window.DISTRO_LOGOS || {};
+const DISTRO_COLORS = window.DISTRO_COLORS || {};
+function distroId(s){
+  const ids = [s.distro || "", ...String(s.distro_like || "").split(/[ ]+/)];
+  return ids.find(i => DISTRO_LOGOS[i]) || null;
+}
+// logo.txt: $1 accent, $2 secondary, $3 text, $4 dim from there on; $$ = a $
+function customLogo(text){
+  const cls = {"1": "k", "2": "t", "3": "g", "4": "d"};
+  let cur = "k", out = "";
+  for (const line of text.split("\n")) {
+    let html = `<span class="${cur}">`;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === "$" && cls[line[i + 1]]) { cur = cls[line[++i]]; html += `</span><span class="${cur}">`; }
+      else if (line[i] === "$" && line[i + 1] === "$") { html += "$"; i++; }
+      else html += esc(line[i]);
+    }
+    out += (out ? "\n" : "") + html + "</span>";
+  }
+  return out;
+}
+function linuxLogo(s){
+  const id = distroId(s);
+  if (!id) return TUX;
+  return DISTRO_LOGOS[id].map(runs => runs.map(([c, t]) => `<span class="${c}">${esc(t)}</span>`).join("")).join("\n");
+}
+// a full six-role palette around the distro's two colors, on termwall's dark background
+// the distro whose colors go with the logo: a picked one (logo = "arch"), else the system's
+function logoDistro(s){ return DISTRO_LOGOS[style.logo] ? style.logo : distroId(s); }
+function distroTheme(s){
+  const id = logoDistro(s);
+  if (!id || !DISTRO_COLORS[id]) return null;
+  const [accent, secondary] = DISTRO_COLORS[id];
+  const mix = (a, b, t) => "#" + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) +
+    parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, "0")).join("");
+  return {bg: mix("#141414", accent, 0.04), accent, secondary, text: mix("#9a9a9a", accent, 0.12),
+          dim: mix("#4a4a4a", accent, 0.15), faint: mix("#222222", accent, 0.08)};
+}
+const BARS = {blocks: ["█", "█"], shade: ["▓", "░"], dots: ["■", "·"], line: ["━", "─"]};
+function bar(p, n = 20){ const f = Math.round(Math.max(0, Math.min(100, p))/100*n);
+  const [on, off] = BARS[style.bars] || BARS.blocks;
+  if (style.bars === "shade") {  // full blocks that fade out at the edge: ████▓▒░ (and a color gradient, CSS)
+    const edge = "▓▒".slice(0, Math.min(2, f)), full = "█".repeat(f - edge.length);
+    return `<span class="bar"><span class="f">${full}${edge}</span><span class="e">${off.repeat(n-f)}</span></span>`; }
+  return `<span class="bar">${on.repeat(f)}<span class="e">${off.repeat(n-f)}</span></span>`; }
+const BLOCKS = "▁▂▃▄▅▆▇█";
+function spark(vals, max = 100, n = 60){
+  const v = vals.slice(-n); while (v.length < n) v.unshift(0);
+  return v.map(x => BLOCKS[Math.min(7, Math.floor(Math.max(0, x)/max*7.999))]).join(""); }
+function uptime(s){ const d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60);
+  return (d ? d+" days, " : "") + (h ? h+" hours, " : "") + m + " mins"; }
+function row(k, v){ return `<div class="row"><span class="key">${k ? k + ":" : ""}</span><span class="val">${v}</span></div>`; }
+const kv = (k, v) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`;
+
+let last = null;
+// "logo": auto (the system's), windows, tux, none, or any distro's (an Arch logo on Windows...)
+// ── logo = image: a picture or an animated GIF, as half blocks or characters ──
+// The server hands over the file; the page decodes it (ImageDecoder for every GIF frame, else
+// the first frame), shrinks each frame to the logo's size once, and turns pixels into text on
+// every palette change. Frames play with their own durations.
+const IMG = {key: null, frames: [], html: [], i: 0, timer: null, htmlKey: null, failed: false};
+function imageLogoUrl(s){
+  if (URLQ.get("logoimage") && DEMO) return URLQ.get("logoimage");
+  return s.logo_image ? withToken(API.replace(/stats$/, "logo-image")) + "&v=" + s.logo_image : null;
+}
+async function loadImageLogo(url, cols, chars){
+  const key = url + "|" + cols + "|" + chars;
+  if (IMG.key === key) return;
+  IMG.key = key; clearTimeout(IMG.timer); IMG.frames = []; IMG.html = []; IMG.htmlKey = null; IMG.failed = false;
+  let frames = [];
+  try {
+    const r = await fetch(url, {cache: "no-store"});
+    if (!r.ok) throw new Error(r.status);
+    const type = (r.headers.get("Content-Type") || "image/png").split(";")[0];
+    const buf = await r.arrayBuffer();
+    const grab = (src, w, h) => {
+      const rows = chars === "blocks" ? Math.max(2, Math.round(cols * h / w / 2) * 2) : Math.max(1, Math.round(cols * h / w * 0.5));
+      const c = document.createElement("canvas"); c.width = cols; c.height = rows;
+      const ctx = c.getContext("2d", {willReadFrequently: true});
+      ctx.imageSmoothingEnabled = w > cols * 2;  // pixel art stays sharp
+      ctx.drawImage(src, 0, 0, cols, rows);
+      return {w: cols, h: rows, px: ctx.getImageData(0, 0, cols, rows).data};
+    };
+    if (window.ImageDecoder && await ImageDecoder.isTypeSupported(type)) {
+      const dec = new ImageDecoder({data: buf, type});
+      await dec.tracks.ready;
+      const n = Math.min(150, dec.tracks.selectedTrack.frameCount || 1);
+      for (let i = 0; i < n; i++) {
+        const {image} = await dec.decode({frameIndex: i});
+        frames.push({...grab(image, image.displayWidth, image.displayHeight), ms: Math.max(20, (image.duration || 100000) / 1000)});
+        image.close();
+      }
+      dec.close();
+    } else {
+      const bmp = await createImageBitmap(new Blob([buf], {type}));
+      frames.push({...grab(bmp, bmp.width, bmp.height), ms: 0});
+    }
+  } catch (e) { frames = []; }
+  if (IMG.key !== key) return;  // a newer setting won while this was loading
+  IMG.frames = frames; IMG.i = 0; IMG.failed = !frames.length; IMG.palette = null;
+  if (last) { ownTheme = logoTheme(last); applyTheme(serverTheme); }  // theme "logo" follows the new picture
+  if (last) render(last);
+  playImageLogo();
+}
+function playImageLogo(){
+  clearTimeout(IMG.timer);
+  if (IMG.frames.length < 2) return;
+  IMG.timer = setTimeout(() => {
+    if (style.logo !== "image") return;  // switched to another logo meanwhile: stop for good
+    IMG.i = (IMG.i + 1) % IMG.frames.length;
+    put("logo", imageLogoHtml());
+    playImageLogo();
+  }, IMG.frames[IMG.i].ms);
+}
+function imageLogoHtml(){
+  if (!IMG.frames.length) return "";
+  const mode = style.logo_chars === "ascii" ? "ascii" : "blocks", pal = style.logo_colors === "palette";
+  const cs = getComputedStyle(document.documentElement);
+  const key = mode + pal + ["--faint", "--dim", "--teal", "--grey", "--mint"].map(v => cs.getPropertyValue(v)).join();
+  if (IMG.htmlKey !== key) { IMG.html = []; IMG.htmlKey = key; }
+  if (!IMG.html[IMG.i]) IMG.html[IMG.i] = frameHtml(IMG.frames[IMG.i], mode, pal, cs);
+  return IMG.html[IMG.i];
+}
+const RAMP = " .:-=+*#%@";
+function frameHtml(fr, mode, pal, cs){
+  // palette mode: five palette roles ordered by their own lightness, picked by the pixel's
+  const lum = (r, g, b) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  const roles = ["f", "d", "t", "g", "k"].map(c => {
+    const v = cs.getPropertyValue({f: "--faint", d: "--dim", t: "--teal", g: "--grey", k: "--mint"}[c]).trim();
+    const h = /^#[0-9a-f]{6}$/i.test(v) ? v : "#888888";
+    return [c, lum(parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16))];
+  }).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+  const at = (x, y) => { const o = (y * fr.w + x) * 4, d = fr.px; return d[o + 3] < 128 ? null : [d[o], d[o + 1], d[o + 2]]; };
+  const hex = c => "#" + c.map(v => v.toString(16).padStart(2, "0")).join("");
+  const role = c => roles[Math.min(4, Math.floor(lum(...c) * 5))];
+  const lines = [];
+  const rows = mode === "blocks" ? fr.h / 2 : fr.h;
+  for (let y = 0; y < rows; y++) {
+    let out = "", open = null;
+    const emit = (styleOrClass, ch) => {
+      if (styleOrClass !== open) { if (open !== null) out += "</span>"; out += styleOrClass ? `<span ${styleOrClass}>` : "<span>"; open = styleOrClass; }
+      out += ch;
+    };
+    for (let x = 0; x < fr.w; x++) {
+      if (mode === "blocks") {
+        const a = at(x, y * 2), b = at(x, y * 2 + 1);
+        if (!a && !b) emit("", " ");
+        else if (pal) {
+          const ra = a && role(a), rb = b && role(b);
+          if (a && b && ra === rb) emit(`class="${ra}"`, "█");
+          else if (a && b) emit(`class="${ra}" style="background:var(${{f: "--faint", d: "--dim", t: "--teal", g: "--grey", k: "--mint"}[rb]})"`, "▀");
+          else emit(`class="${ra || rb}"`, a ? "▀" : "▄");
+        } else {
+          if (a && b) emit(`style="color:${hex(a)};background:${hex(b)}"`, "▀");
+          else emit(`style="color:${hex(a || b)}"`, a ? "▀" : "▄");
+        }
+      } else {
+        const a = at(x, y);
+        if (!a) { emit("", " "); continue; }
+        const ch = RAMP[Math.min(RAMP.length - 1, Math.floor(lum(...a) * RAMP.length))];
+        emit(pal ? `class="${role(a)}"` : `style="color:${hex(a)}"`, ch === " " ? "." : ch);
+      }
+    }
+    if (open !== null) out += "</span>";
+    lines.push(out);
+  }
+  return lines.join("\n");
+}
+// theme "logo" (and "auto" without livery): a palette from the logo picture. The most common
+// vivid hue is the accent, a second one at least 60 degrees away the secondary; background
+// and text are built around them like a distro's.
+function imagePalette(fr){
+  if (!fr) return null;
+  const buckets = Array.from({length: 12}, () => ({w: 0, r: 0, g: 0, b: 0}));
+  for (let o = 0; o < fr.px.length; o += 4) {
+    if (fr.px[o + 3] < 128) continue;
+    const r = fr.px[o], g = fr.px[o + 1], b = fr.px[o + 2];
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (d < 40 || mx < 60) continue;  // greys and near-black say nothing about the colors
+    let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h = (h * 60 + 360) % 360;
+    const bk = buckets[Math.floor(h / 30) % 12], w = d / 255;
+    bk.w += w; bk.r += r * w; bk.g += g * w; bk.b += b * w;
+  }
+  const order = buckets.map((bk, i) => [i, bk]).filter(([, bk]) => bk.w > 0).sort((a, b) => b[1].w - a[1].w);
+  if (!order.length) return null;
+  const color = bk => [bk.r / bk.w, bk.g / bk.w, bk.b / bk.w];
+  const lift = c => {  // readable on a dark background
+    const l = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+    const k = l < 0.45 ? 0.45 / Math.max(l, 0.05) : 1;
+    return "#" + c.map(v => Math.min(255, Math.round(v * k)).toString(16).padStart(2, "0")).join("");
+  };
+  const first = order[0];
+  const far = order.find(([i]) => Math.min(Math.abs(i - first[0]), 12 - Math.abs(i - first[0])) >= 2);
+  const accent = lift(color(first[1]));
+  const secondary = far ? lift(color(far[1])) : mixHex(accent, "#808080", 0.4);
+  return paletteAround(accent, secondary);
+}
+function mixHex(a, b, t){
+  return "#" + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) +
+    parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, "0")).join("");
+}
+function paletteAround(accent, secondary){
+  return {bg: mixHex("#141414", accent, 0.04), accent, secondary, text: mixHex("#9a9a9a", accent, 0.12),
+          dim: mixHex("#4a4a4a", accent, 0.15), faint: mixHex("#222222", accent, 0.08)};
+}
+// the page's own palette (when the server sends none): the logo picture's, else the distro's
+function logoTheme(s){
+  if (style.logo === "image" && IMG.frames.length) return IMG.palette || (IMG.palette = imagePalette(IMG.frames[0]));
+  return distroTheme(s);
+}
+// layout "logo": the logo grows until it fills about two thirds of the height or 85% of the width
+function fitBigLogo(){
+  const el = document.querySelector('#logo pre.logo');
+  if (!el || currentLayout() !== "logo") return;
+  const lines = el.textContent.split("\n"), rows = lines.length, cols = Math.max(1, ...lines.map(l => l.length));
+  const [w, h] = stageSize(), lh = style.logo === "image" ? 1 : 1.22;
+  el.style.fontSize = Math.max(10, Math.floor(Math.min(h * 0.62 / (rows * lh), w * 0.85 / (cols * 0.6)))) + "px";
+}
+function pickLogo(s){
+  const want = style.logo || "auto";
+  if (want !== "image" && IMG.key) { clearTimeout(IMG.timer); IMG.key = null; IMG.frames = []; IMG.palette = null; }
+  if (want === "windows") return WIN_LOGO;
+  if (want === "tux") return TUX;
+  if (want === "custom") return s.logo_text ? customLogo(s.logo_text) : TUX;
+  if (want === "image") {
+    const url = imageLogoUrl(s);
+    if (!url) return TUX;
+    loadImageLogo(url, Math.max(12, Math.min(120, Number(style.logo_width) || 40)), style.logo_chars === "ascii" ? "ascii" : "blocks");
+    return IMG.failed ? TUX : imageLogoHtml();  // can't be read: the penguin, not a hole
+  }
+  if (want !== "auto" && want !== "none") return DISTRO_LOGOS[want] ? linuxLogo({distro: want}) : TUX;
+  return s.os_family === "linux" ? linuxLogo(s) : WIN_LOGO;
+}
+function meter(label, p, n, text){
+  const f = Math.round(Math.max(0, Math.min(100, p)) / 100 * n);
+  return `<div class="meter"><span class="ml">${esc(label)}</span><span class="mb">[</span><span class="mf${p > 80 ? " hot" : ""}">${"|".repeat(f)}</span>` +
+         `<span class="me">${" ".repeat(Math.max(0, n - f - text.length))}</span><span class="mv">${esc(text)}</span><span class="mb">]</span></div>`;
+}
+function render(s){
+  if (style.private) s = {...s, user: "user", host: "computer", local_ip: "hidden"};
+  last = s;
+  const linux = s.os_family === "linux";
+  const hidden = new Set(style.hide || []);
+  document.body.classList.toggle("hide-logo", hidden.has("logo") || style.logo === "none");
+  const g = s.gpu;
+  put("title", `<span class="k">${esc(s.user)}</span><span class="at">@</span><span class="k">${esc(s.host)}</span>`);
+  const cmd = `<span class="${{accent: "k", secondary: "t", dim: "d"}[style.prompt_color] || "g"}">${esc(style.prompt ?? "fastfetch --live")}</span>`;
+  put("prompt", linux
+    ? `<span class="k">${esc(s.user)}@${esc(s.host)}</span>:<span class="path">~</span><span class="arrow">$</span> ${cmd} <span class="cursor"></span>`
+    : `<span class="t">PS</span> <span class="path">C:\\Users\\${esc(s.user)}</span><span class="arrow">&gt;</span> ${cmd} <span class="cursor"></span>`);
+  put("logo", pickLogo(s));
+  // a tall distro logo (fastfetch's run to 20 rows) shrinks to the Windows logo's height
+  document.querySelectorAll('[data-p="logo"]').forEach(el => {
+    const rows = el.textContent.split("\n").length;
+    el.classList.toggle("img", style.logo === "image");
+    el.style.fontSize = style.logo === "image" ? "" : rows > 17 ? `${Math.max(12, Math.floor(17 * 17 / rows))}px` : "";
+  });
+  put("sep", "-".repeat((s.user + "@" + s.host).length));
+  put("swatches", ["var(--bg);outline:1px solid var(--dim)", "var(--grey)", "var(--teal)", "var(--mint)", "var(--dim)", "var(--faint)"]
+    .map(c => `<span style="background:${c}"></span>`).join(""));
+  put("rows", [
+    row("OS", esc(s.os)),
+    row("Host", esc(s.board || "-")),
+    row("Kernel", esc(s.kernel)),
+    row("Uptime", uptime(s.uptime)),
+    row("Shell", esc(s.shell)),
+    row("CPU", `${esc(s.cpu_model)} (${s.cores}) @ ${((s.cpu_freq || 0)/1000).toFixed(2)} GHz`),
+    row("", `${bar(s.cpu)} <span class="pct">${s.cpu.toFixed(0)}%</span>`),
+    hidden.has("gpu") ? "" : g ? row("GPU", `${esc(g.name)} · ${g.temp ?? "-"}°C · ${g.power != null ? g.power.toFixed(0)+" W" : ""}`) : row("GPU", "-"),
+    !hidden.has("gpu") && g ? row("", `${bar(g.util ?? 0)} <span class="pct">${(g.util ?? 0).toFixed(0)}%</span>  <span class="d">vram</span> ${(g.vram_used/1024).toFixed(1)} / ${(g.vram_total/1024).toFixed(0)} GiB`) : "",
+    hidden.has("memory") ? "" : row("Memory", `${gib(s.ram.used)} / ${gib(s.ram.total)} <span class="pct">(${s.ram.percent.toFixed(0)}%)</span>  <span class="d">swap</span> ${gib(s.swap.used)}`),
+    hidden.has("memory") ? "" : row("", bar(s.ram.percent)),
+    ...(hidden.has("disks") ? [] : s.disks).slice(0, 4).map(d => row(`Disk (${esc(d.mount)})`, `${bar(d.percent, 12)} ${gib(d.used)} / ${gib(d.total)} <span class="d">${esc(d.fs)}</span>`)),
+    hidden.has("network") ? "" : row("Network", `<span class="k">↓</span> ${rate(s.net.down)}  <span class="t">↑</span> ${rate(s.net.up)}  <span class="d">·</span> ${esc(s.local_ip)}`),
+  ].join(""));
+  put("who", [esc(s.os), esc(s.kernel), "up " + uptime(s.uptime)].map(x => `<div class="d">${x}</div>`).join(""));
+  put("cpu-sum", s.cpu.toFixed(0) + "%");
+  put("cpu-model", esc(s.cpu_model.replace(/\(R\)|\(TM\)|CPU /g, "").replace(/\s+/g, " ")));
+  put("spark-cpu", spark(s.history.cpu));
+  put("gpu-sum", g ? (g.util ?? 0).toFixed(0) + "%" : "n/a");
+  put("spark-gpu", spark(s.history.gpu));
+  put("core-count", s.cores);
+  put("cores", s.cores_pct.map((p, i) =>
+    `<div class="core"><div class="col${p > 80 ? " hot" : ""}"><i style="height:${Math.max(2, p)}%"></i></div><small>${i}</small></div>`).join(""));
+  put("proc-count", s.procs_total);
+  put("procs", s.procs.slice(0, 6).map(p =>
+    `<tr><td class="n">${esc(p.name.replace(/\.exe$/i, ""))}${p.count > 1 ? ` <span class="d">×${p.count}</span>` : ""}</td><td class="c">${p.cpu.toFixed(1)}%</td><td class="m">${(p.mem/1024**2).toFixed(0)} MiB</td></tr>`).join(""));
+  // board boxes
+  put("gpu-box", g
+    ? `<div class="big">${(g.util ?? 0).toFixed(0)}<small>%  ${g.temp ?? "-"}°C</small></div>` +
+      kv("name", esc(g.name.replace(/^NVIDIA (GeForce )?/, ""))) +
+      kv("vram", `${(g.vram_used/1024).toFixed(1)} / ${(g.vram_total/1024).toFixed(0)} GiB`) +
+      kv("power", g.power != null ? g.power.toFixed(0) + " W" : "-") +
+      `<div style="margin-top:8px">${bar(g.vram_total ? g.vram_used / g.vram_total * 100 : 0, 26)}</div>`
+    : `<div class="big">n/a</div><div class="d">no NVIDIA GPU (nvidia-smi) found</div>`);
+  put("mem-sum", s.ram.percent.toFixed(0) + "%");
+  put("mem-box", `<div class="big">${gib(s.ram.used).replace(" GiB", "")}<small> / ${gib(s.ram.total)}</small></div>` +
+    `<div>${bar(s.ram.percent, 26)}</div>` +
+    kv("swap", `${gib(s.swap.used)} / ${gib(s.swap.total)}`) +
+    `<div>${bar(s.swap.percent, 26)}</div>` +
+    `<div class="swatches" style="margin-top:22px">${["var(--bg);outline:1px solid var(--dim)", "var(--grey)", "var(--teal)", "var(--mint)", "var(--dim)", "var(--faint)"].map(c => `<span style="background:${c}"></span>`).join("")}</div>`);
+  put("disk-box", s.disks.slice(0, 5).map(d =>
+    `<div class="disk"><span class="k">${esc(d.mount)}</span> <span class="d">${esc(d.fs)}</span>  ${gib(d.used)} / ${gib(d.total)}${bar(d.percent, 28)}</div>`).join(""));
+  const top = Math.max(1, ...s.history.down, ...s.history.up);
+  put("net-box", `<div class="big"><span class="k">↓</span> ${rate(s.net.down)}</div>` +
+    `<div class="spark">${spark(s.history.down || [], top, 34)}</div>` +
+    `<div class="big" style="font-size:28px;margin-top:10px"><span class="t">↑</span> ${rate(s.net.up)}</div>` +
+    `<div class="spark m">${spark(s.history.up || [], top, 34)}</div>` + kv("address", esc(s.local_ip)));
+  // minimal
+  put("line", [hidden.has("cpu") ? "" : `cpu <b>${s.cpu.toFixed(0)}%</b>`,
+               hidden.has("memory") ? "" : `ram <b>${s.ram.percent.toFixed(0)}%</b>`,
+               g && !hidden.has("gpu") ? `gpu <b>${(g.util ?? 0).toFixed(0)}%</b>` : "",
+               hidden.has("network") ? "" : `<i>↓</i> ${rate(s.net.down)}   <i>↑</i> ${rate(s.net.up)}`]
+    .filter(Boolean).join("   "));
+  // htop: a meter per core in two columns, then memory, swap, GPU, network
+  const half = Math.ceil(s.cores_pct.length / 2), mw = s.cores_pct.length > 32 ? 22 : 30;
+  const coreMeter = (p, i) => meter(String(i), p, mw, p.toFixed(1) + "%");
+  put("hcores-a", s.cores_pct.slice(0, half).map((p, i) => coreMeter(p, i)).join(""));
+  put("hcores-b", s.cores_pct.slice(half).map((p, i) => coreMeter(p, i + half)).join(""));
+  put("hmeters", [
+    hidden.has("memory") ? "" : meter("Mem", s.ram.percent, 34, `${(s.ram.used / 1024 ** 3).toFixed(1)}G/${(s.ram.total / 1024 ** 3).toFixed(1)}G`),
+    hidden.has("memory") ? "" : meter("Swp", s.swap.percent, 34, `${(s.swap.used / 1024 ** 3).toFixed(1)}G/${(s.swap.total / 1024 ** 3).toFixed(1)}G`),
+    !g || hidden.has("gpu") ? "" : meter("GPU", g.util ?? 0, 34, `${(g.util ?? 0).toFixed(0)}% ${g.temp ?? "-"}°C`),
+    hidden.has("disks") ? "" : s.disks.slice(0, 2).map(d => meter(d.mount === "/" ? "/" : d.mount.split(/[\/]/).filter(Boolean).pop().slice(0, 4), d.percent, 34, `${(d.used / 1024 ** 3).toFixed(0)}G/${(d.total / 1024 ** 3).toFixed(0)}G`)).join(""),
+  ].join(""));
+  put("hinfo", `Tasks: <b>${s.procs_total}</b>   Uptime: <b>${uptime(s.uptime)}</b>` +
+    (hidden.has("network") ? "" : `<br>Net: <b>↓ ${rate(s.net.down)}</b>  <b>↑ ${rate(s.net.up)}</b>`) +
+    `<br>${esc(s.user)}@${esc(s.host)} · ${esc(s.os)}`);
+  put("hprocs", s.procs.slice(0, 12).map(p => `<tr><td>${esc(p.name.replace(/\.exe$/i, ""))}</td><td class="r">${p.count}</td>` +
+    `<td class="r c">${p.cpu.toFixed(1)}</td><td class="r m">${(p.mem / 1024 ** 2).toFixed(0)} MiB</td>` +
+    `<td>${bar(Math.min(100, p.cpu * 4), 16)}</td></tr>`).join(""));
+  // phone: four big gauges, network, disks, the top five
+  const gauge = (label, v, sub, hist) => `<div class="gauge"><div class="gl">${label}</div>` +
+    `<div class="gv">${v == null ? "n/a" : v.toFixed(0) + "<small>%</small>"}</div>${bar(v ?? 0, 14)}` +
+    (hist ? `<div class="spark">${spark(hist, 100, 26)}</div>` : "") + `<div class="gs">${sub}</div></div>`;
+  put("phone-os", `${esc(s.os)} · up ${uptime(s.uptime)}`);
+  put("logo-os", `${esc(s.os)} · up ${uptime(s.uptime)}`);
+  fitBigLogo();
+  put("phone-gauges", [
+    hidden.has("cpu") ? "" : gauge("CPU", s.cpu, `${s.cores} threads · ${((s.cpu_freq || 0) / 1000).toFixed(2)} GHz`, s.history.cpu),
+    hidden.has("gpu") ? "" : gauge("GPU", g ? g.util ?? 0 : null, g ? `${g.temp ?? "-"}°C · ${g.power != null ? g.power.toFixed(0) + " W" : "-"}` : "no NVIDIA GPU", g ? s.history.gpu : null),
+    hidden.has("memory") ? "" : gauge("MEMORY", s.ram.percent, `${gib(s.ram.used)} / ${gib(s.ram.total)}`),
+    hidden.has("gpu") || !g ? (hidden.has("memory") ? "" : gauge("SWAP", s.swap.percent, `${gib(s.swap.used)} / ${gib(s.swap.total)}`))
+      : gauge("VRAM", g.vram_total ? g.vram_used / g.vram_total * 100 : 0, `${(g.vram_used / 1024).toFixed(1)} / ${(g.vram_total / 1024).toFixed(0)} GiB`),
+  ].join(""));
+  put("phone-net", `<div><div class="big"><span class="k">↓</span> ${rate(s.net.down)}</div><div class="spark">${spark(s.history.down || [], top, 26)}</div></div>` +
+    `<div><div class="big"><span class="t">↑</span> ${rate(s.net.up)}</div><div class="spark">${spark(s.history.up || [], top, 26)}</div></div>`);
+  put("phone-disks", s.disks.slice(0, 3).map(d =>
+    `<div class="disk"><span><span class="k">${esc(d.mount)}</span> ${gib(d.used)} / ${gib(d.total)}</span>${bar(d.percent, 16)}</div>`).join(""));
+  put("phone-procs", s.procs.slice(0, 5).map(p =>
+    `<tr><td>${esc(p.name.replace(/\.exe$/i, ""))}${p.count > 1 ? ` <span class="d">×${p.count}</span>` : ""}</td><td class="c">${p.cpu.toFixed(1)}%</td><td class="m">${(p.mem / 1024 ** 2).toFixed(0)} MiB</td></tr>`).join(""));
+  put("spark-min", spark(s.history.cpu).replace(/[▄▅▆▇█]/g, m => `<span class="hi">${m}</span>`));
+}
+
+// Palette from the API (theme.json, written by livery). Only swaps CSS variables — instant, no reload.
+const THEME_VARS = {bg: "--bg", accent: "--mint", secondary: "--teal", text: "--grey", dim: "--dim", faint: "--faint"};
+let themeKey = "";
+let ownTheme = null, serverTheme = null;  // the logo's colors, for when the server sends no palette
+function applyTheme(t){
+  t = t || ownTheme;
+  const key = t ? JSON.stringify(t) : "";
+  if (key === themeKey) return;
+  themeKey = key;
+  const root = document.documentElement.style;
+  for (const [k, v] of Object.entries(THEME_VARS)) {
+    if (t && /^#[0-9a-f]{6}$/i.test(t[k] || "")) root.setProperty(v, t[k]); else root.removeProperty(v);
+  }
+}
+
+let failures = 0, pageVersion = null;
+async function poll(){
+  try {
+    const r = await fetch(withToken(API), {cache: "no-store"});
+    if (r.status === 403) { onForbidden(); return; }
+    const s = await r.json();
+    if (s && s.time) {
+      if (checkPage(s)) return;
+      applyStyle(s.style); ownTheme = logoTheme(s); serverTheme = s.theme; applyTheme(s.theme); render(s); failures = 0;
+      put("status", `<span class="ok">●</span> ${SHARE ? "termwall share" : "termwall-api · 127.0.0.1:9002"}${SCREEN ? " · screen " + SCREEN : ""} · ${new Date(s.time*1000).toLocaleTimeString("en-GB")}`); }
+  } catch (e) {
+    failures++;
+    put("status", `<span class="bad">●</span> api offline · run <span class="g">python termwall_api.py</span>` + (failures > 1 ? ` <span class="d">(${failures})</span>` : ""));
+  }
+}
+function demoDistro(){
+  const want = URLQ.get("distro");
+  if (want !== "cycle") return want;
+  const all = ["windows", ...Object.keys(window.DISTRO_LOGOS || {})];
+  const pick = all[Math.floor(Date.now() / 5000) % all.length];
+  return pick === "windows" ? null : pick;
+}
+// ?demo: made-up stats, no API needed — for previews and screenshots (nothing of this PC shown)
+const DEMO = URLQ.has("demo");
+function demoStats(){
+  const t = Date.now() / 1000, w = (a, f, o = 0) => a * (0.5 + 0.5 * Math.sin(t * f + o));
+  const hist = (f, o, base, amp) => Array.from({length: 60}, (_, i) => base + w(amp, f, o - i * f * 1.7) + 6 * Math.sin(i * 1.3 + o));
+  const cores = Array.from({length: 16}, (_, i) => Math.max(1, Math.min(99, 12 + w(55, 0.7 + i * 0.05, i) + (i % 5 === 0 ? 20 : 0))));
+  const cpu = cores.reduce((a, b) => a + b, 0) / cores.length;
+  return {
+    user: "user", host: "desktop", os: "Windows 11 Pro 25H2 AMD64", os_family: "windows",
+    kernel: "WIN32_NT 10.0.26200.6584", board: "B650 AORUS ELITE AX", cpu_model: "AMD Ryzen 7 7800X3D 8-Core Processor",
+    cores: 16, cpu_freq: 4850, time: t, uptime: 3 * 86400 + 5 * 3600 + 1260, shell: "PowerShell",
+    cpu, cores_pct: cores,
+    gpu: {name: "NVIDIA GeForce RTX 4070", util: 30 + w(40, 0.4), temp: 54, vram_used: 5120, vram_total: 12288, power: 118},
+    ram: {used: 21.4 * 1024 ** 3, total: 32 * 1024 ** 3, percent: 66.8},
+    swap: {used: 1.2 * 1024 ** 3, total: 8 * 1024 ** 3, percent: 15},
+    disks: [{mount: "C:", fs: "NTFS", used: 412e9, total: 1000e9, percent: 41.2},
+            {mount: "D:", fs: "NTFS", used: 1310e9, total: 2000e9, percent: 65.5}],
+    net: {down: 2.4e6 + w(3e6, 0.9), up: 180e3 + w(2e5, 1.3)}, local_ip: "192.168.1.20 (Ethernet)",
+    procs: [{name: "game.exe", cpu: 14.2, mem: 6.1e9, count: 1}, {name: "firefox.exe", cpu: 4.8, mem: 2.2e9, count: 14},
+            {name: "obs64.exe", cpu: 3.1, mem: 640e6, count: 1}, {name: "discord.exe", cpu: 1.2, mem: 520e6, count: 6},
+            {name: "code.exe", cpu: 0.9, mem: 910e6, count: 9}, {name: "spotify.exe", cpu: 0.4, mem: 310e6, count: 5},
+            {name: "explorer.exe", cpu: 0.3, mem: 180e6, count: 1}, {name: "steam.exe", cpu: 0.3, mem: 420e6, count: 4},
+            {name: "dwm.exe", cpu: 0.2, mem: 150e6, count: 1}, {name: "python.exe", cpu: 0.2, mem: 60e6, count: 2},
+            {name: "vivaldi.exe", cpu: 0.1, mem: 1.3e9, count: 21}, {name: "wallpaper64.exe", cpu: 0.1, mem: 240e6, count: 1}],
+    procs_total: 287,
+    history: {cpu: hist(0.5, 0, 15, 40), gpu: hist(0.3, 2, 20, 50), down: hist(0.8, 1, 1e6, 4e6), up: hist(1.1, 3, 1e5, 3e5)},
+    ...(demoDistro() ? {os: `${({arch: "Arch Linux", "opensuse-tumbleweed": "openSUSE Tumbleweed", endeavouros: "EndeavourOS", cachyos: "CachyOS", ubuntu: "Ubuntu 24.04.3 LTS", debian: "Debian GNU/Linux 13", fedora: "Fedora Linux 43", linuxmint: "Linux Mint 22.2", manjaro: "Manjaro Linux", nixos: "NixOS 25.05", opensuse: "openSUSE Tumbleweed", gentoo: "Gentoo Linux"})[demoDistro()] || demoDistro()} x86_64`, os_family: "linux", distro: demoDistro(),
+        distro_like: "", kernel: "Linux 6.16.8-arch1-1", shell: "zsh", board: "B650 AORUS ELITE AX",
+        disks: [{mount: "/", fs: "btrfs", used: 212e9, total: 1000e9, percent: 21.2}, {mount: "/home", fs: "ext4", used: 1310e9, total: 2000e9, percent: 65.5}],
+        local_ip: "192.168.1.20 (enp6s0)"} : {}),
+  };
+}
+if (DEMO) {
+  // ?bg=171717&accent=b5f4e7&... : a palette for the demo (all six, hex without #)
+  const keys = ["bg", "accent", "secondary", "text", "dim", "faint"];
+  var URL_PALETTE = keys.every(k => /^[0-9a-f]{6}$/i.test(URLQ.get(k) || ""));
+  if (keys.every(k => /^[0-9a-f]{6}$/i.test(URLQ.get(k) || ""))) applyTheme(Object.fromEntries(keys.map(k => [k, "#" + URLQ.get(k)])));
+  const demo = () => { const s = demoStats(); ownTheme = logoTheme(s);
+    if (!URL_PALETTE) applyTheme(null);
+    applyStyle(style); render(s);
+    put("status", `<span class="ok">●</span> demo · made-up stats`); };
+  setInterval(demo, 1000); setTimeout(demo, 0);  // after the whole script ran (clock glyphs below)
+} else {
+  setInterval(poll, 1000); poll();
+}
+
+// index.html changed on disk (API reports its mtime) → reload once to pick it up
+function checkPage(s){
+  if (s.page == null) return false;
+  if (pageVersion == null) { pageVersion = s.page; return false; }
+  if (s.page !== pageVersion) { location.reload(); return true; }
+  return false;
+}
+// Palette and look checked 4×/s through the tiny /theme endpoint — stats stay at 1/s.
+async function pollTheme(){
+  try {
+    const r = await fetch(withToken(API.replace(/stats$/, "theme")), {cache: "no-store"});
+    if (r.status === 403) { onForbidden(); return; }
+    const s = await r.json();
+    if (!checkPage(s)) { serverTheme = s.theme; applyTheme(s.theme); applyStyle(s.style); }
+  } catch (e) {}
+}
+if (!DEMO) setInterval(pollTheme, 250);
+
+// ── clock glyphs ──
+// blocks: a 3×5 pixel font, every glyph ONE svg path — no seams between cells at any scale
+const PIX = {
+  "0":["111","101","101","101","111"], "1":["110","010","010","010","111"],
+  "2":["111","001","111","100","111"], "3":["111","001","111","001","111"],
+  "4":["101","101","111","001","001"], "5":["111","100","111","001","111"],
+  "6":["111","100","111","101","111"], "7":["111","001","001","001","001"],
+  "8":["111","101","111","101","111"], "9":["111","101","111","001","111"] };
+function blockGlyph(ch){
+  if (ch === ":") return `<svg viewBox="0 0 1 5" shape-rendering="crispEdges"><path class="col" d="M0 1h1v1h-1zM0 3h1v1h-1z"/></svg>`;
+  let d = "";
+  PIX[ch].forEach((r, y) => [...r].forEach((b, x) => { if (b === "1") d += `M${x} ${y}h1v1h-1z`; }));
+  return `<svg viewBox="0 0 3 5" shape-rendering="crispEdges"><path class="on" d="${d}"/></svg>`;
+}
+function clockHTML(hhmm){ return [...hhmm].map(blockGlyph).join(""); }
+function tick(){ const n = new Date();
+  showLayout();
+  const h12 = style.clock === "12h";
+  let h = n.getHours();
+  const ampm = h12 ? (h < 12 ? " am" : " pm") : "";
+  if (h12) h = h % 12 || 12;
+  const hhmm = String(h).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0");
+  const date = {long: n.toLocaleDateString("en-GB", {weekday: "long", day: "numeric", month: "long"}),
+                short: n.toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "short"}),
+                iso: `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`,
+                none: ""}[style.date || "long"] ?? "";
+  const sec = (style.seconds === false ? "" : ":" + String(n.getSeconds()).padStart(2, "0")) + ampm;
+  document.querySelectorAll("[data-clock]").forEach(c => {
+    const html = clockHTML(hhmm), t = c.querySelector(".time");
+    if (t.dataset.k !== hhmm) { t.innerHTML = html; t.dataset.k = hhmm; }
+    c.querySelector(".date").textContent = date;
+    c.querySelector(".sec").textContent = sec;
+  });
+}
+setInterval(tick, 1000); tick();
+
+// Wallpaper Engine: currently playing track (only exists inside WE, harmless elsewhere)
+if (window.wallpaperRegisterMediaPropertiesListener) {
+  window.wallpaperRegisterMediaPropertiesListener(e => {
+    put("now", e.title ? `<span class="t">♪</span> <span class="k">${esc(e.title)}</span> <span class="d">—</span> ${esc(e.artist || "")}` : "");
+  });
+}
+</script>
+</body>
+</html>

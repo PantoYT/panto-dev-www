@@ -3,211 +3,194 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wojciech Hałasa (PantoYT)</title>
-<meta name="description" content="Projects by Wojciech Hałasa: a video platform without a framework, a stdlib-only file drop, a lead pipeline that cannot send mail, and simulations you can run in the page.">
+<title>Panto: tools, wallpapers and small servers</title>
+<meta name="description" content="Projects by Panto, a programming student from Poland: termwall, a live system-stats wallpaper; TubeYou, a video platform without a framework; CHIP-8 Studio, dropgate, gitdesk and more.">
+<link rel="canonical" href="https://panto-dev.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://panto-dev.com/">
+<meta property="og:title" content="Panto: tools, wallpapers and small servers">
+<meta property="og:description" content="termwall, TubeYou, CHIP-8 Studio, dropgate, gitdesk and more, some of them running right in the page.">
+<meta property="og:image" content="https://panto-dev.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#171717">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Person", "name": "Panto", "alternateName": "PantoYT",
+ "url": "https://panto-dev.com/", "sameAs": ["https://github.com/PantoYT", "https://www.youtube.com/@pantoyt"]}
+</script>
 </head>
 <body>
 
-<div class="shell">
-  <header class="masthead">
-    <span>Wojciech Hałasa, Poland</span>
-    <nav>
-      <a href="#work">Work</a>
-      <a href="#lab">Homelab</a>
-      <a href="https://github.com/PantoYT">GitHub</a>
-    </nav>
-  </header>
-
-  <section class="hero">
-    <div>
-      <h1>
-        <span class="quiet">Wojciech Hałasa / PantoYT</span>
-        I write the part everyone else imports.
-      </h1>
-      <p>
-        A regex engine instead of <code>RegExp</code>. A font rasteriser instead of a
-        graphics library. It is how I learn.
-      </p>
-      <div class="hero-links">
-        <a class="btn btn-primary" href="#work">See the work</a>
-        <a class="btn" href="https://github.com/PantoYT">GitHub</a>
-      </div>
-    </div>
-
-    <div class="stage stage-static">
-      <iframe src="demos/particle-life/index.html" title="Particle life simulation running live" loading="eager" tabindex="-1" aria-hidden="true"></iframe>
-      <div class="stage-label">
-        <span>particle-life, running now</span>
-        <a href="demos/particle-life/">open it</a>
-      </div>
-    </div>
-  </section>
-</div>
+<header class="bar">
+  <a class="brand" href="/">panto-dev.com</a>
+  <nav>
+    <a href="#projects">projects</a>
+    <a href="#demos">demos</a>
+    <a href="#contact">contact</a>
+  </nav>
+  <div class="controls">
+    <label>theme
+      <select id="theme" aria-label="Color theme"></select>
+    </label>
+    <label class="check"><input type="checkbox" id="crt"> crt</label>
+  </div>
+</header>
 
 <main>
 
-<div class="shell">
-  <section id="work">
-    <h2 class="section-head">Three I would show first</h2>
-
-    <article class="feature reveal">
-      <h3>TubeYou</h3>
-      <p class="stack">PHP 8, MariaDB, vanilla JS, Docker · <a href="https://github.com/PantoYT/TubeYou">repository</a></p>
-      <p>
-        A video platform with the parts that are actually hard: upload and streaming over
-        HTTP range requests, subscriptions, a comment system with replies, pinning and
-        editing, email verification, full text search, and a scored feed.
-      </p>
-      <div class="pull">
-        <strong>Built with no framework at all,</strong> MVC written by hand. It is difficult
-        to know what a framework does for you until you spend a month doing it yourself.
+<section class="hero">
+  <div class="fetch">
+    <p class="prompt"><span class="k">panto@panto-dev</span>:<span class="t">~</span>$ fastfetch</p>
+    <div class="fetch-body">
+<pre class="logo" aria-hidden="true">//////////////////
+//////////////////
+////          ////
+////          ////
+//////////////////
+//////////////////
+////
+////
+////
+////</pre>
+      <div class="info">
+        <h1><span class="k">panto</span><span class="at">@</span><span class="k">panto-dev</span></h1>
+        <p class="sep" aria-hidden="true">---------------</p>
+        <dl>
+          <dt>Location</dt><dd>Poland</dd>
+          <dt>Does</dt><dd>tools I use myself, mostly without frameworks</dd>
+          <dt>Now</dt><dd><a href="https://github.com/PantoYT/termwall">termwall</a> 1.5.0</dd>
+          <dt>Languages</dt><dd>Python, C#, PHP, JavaScript, C++</dd>
+          <dt>Hardware</dt><dd>ESP32, Arduino, a home server</dd>
+          <dt>Code</dt><dd><a href="https://github.com/PantoYT">github.com/PantoYT</a></dd>
+          <dt>Mail</dt><dd><a href="mailto:contact@panto-dev.com">contact@panto-dev.com</a></dd>
+        </dl>
+        <p class="swatches" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></p>
       </div>
-      <p class="footnote" style="margin-top:1rem">The hosted demo is offline. The code and setup live in the repository.</p>
-    </article>
-
-    <article class="feature reveal">
-      <h3>WebLeads</h3>
-      <p class="stack">Python, SQLite · private repository</p>
-      <p>
-        A pipeline for finding web design work with local businesses: find candidates, audit
-        their existing site technically, rank who is worth the effort, collect a brief, build
-        a prototype, prepare an approach. Ranking matters most, because a prototype is the
-        most expensive decision in the chain and most leads do not justify one.
-      </p>
-      <div class="pull">
-        <strong>There is no SMTP code in it, deliberately, and adding any is forbidden.</strong>
-        Polish telecoms law and GDPR make automated cold outreach a legal problem rather than
-        a technical one, so the system drafts and a human sends every message by hand.
-        A pipeline that cannot send is the entire point.
-      </div>
-    </article>
-
-    <article class="feature reveal">
-      <h3>dropgate</h3>
-      <p class="stack">Python, standard library only · <a href="https://github.com/PantoYT/dropgate">repository</a></p>
-      <p>
-        Drop a file, get a tokenised link, send it to someone. One Python file, zero
-        dependencies, and it runs portable off a USB stick. Tokens are 128 bit capabilities,
-        comparisons are constant time, and path traversal is closed by reducing every
-        requested name to its basename against a per share allowlist.
-      </p>
-      <div class="pull">
-        <strong>The public server and the admin panel are separate processes,</strong> and only
-        the public one is ever attached to the tunnel. The panel is not protected by a setting
-        I could get wrong. It has no route to the internet at all.
-      </div>
-    </article>
-  </section>
-</div>
-
-<div class="shell">
-  <section>
-    <h2 class="section-head">Running in this page</h2>
-    <div class="demo-strip">
-
-      <div class="reveal">
-        <div class="stage">
-          <iframe src="demos/regexplode/index.html" title="regexplode, a regex engine with two matchers" loading="lazy"></iframe>
-        </div>
-        <h3>regexplode</h3>
-        <p>Backtracking and a Pike VM racing the same pattern. 1.6 million comparisons against the native engine, no divergences.</p>
-      </div>
-
-      <div class="reveal">
-        <div class="stage">
-          <iframe src="demos/physarum/index.html" title="Physarum slime mould simulation" loading="lazy"></iframe>
-        </div>
-        <h3>physarum</h3>
-        <p>Slime mould transport networks on the GPU, four WebGL2 passes per step, solving mazes nobody described to it.</p>
-      </div>
-
-      <div class="reveal">
-        <div class="stage">
-          <iframe src="demos/particle-life/gpu.html" title="Particle life, GPU version" loading="lazy"></iframe>
-        </div>
-        <h3>particle-life, GPU</h3>
-        <p>One matrix of attraction and repulsion. Cells, swarms and predation fall out of rules that describe none of them.</p>
-      </div>
-
     </div>
-  </section>
-</div>
+  </div>
 
-<div class="shell">
-  <section>
-    <h2 class="section-head">Other work</h2>
-    <div class="work">
+  <figure class="screen">
+    <iframe id="termwall-demo" src="demos/termwall/index.html?demo&amp;distro=cycle&amp;bg=171717&amp;accent=b5f4e7&amp;secondary=7faca3&amp;text=939fa1&amp;dim=4b5252&amp;faint=242626" title="termwall in demo mode: a live system-stats wallpaper with made-up stats" loading="eager"></iframe>
+    <figcaption>termwall, running in this page with made-up stats. <a href="demos/termwall/index.html?demo&amp;distro=cycle">full screen</a></figcaption>
+  </figure>
+</section>
 
-      <article class="work-item">
-        <h3>gitdesk <a href="https://github.com/PantoYT/gitdesk">repo</a></h3>
-        <p>A panel over every repository on the machine at once. What is committed but never pushed, which working copy is ahead, where a secret sits one command from leaving.</p>
-      </article>
+<section id="projects">
+  <h2><span class="t">$</span> ls ~/projects</h2>
+  <table class="procs">
+    <thead><tr><th scope="col">name</th><th scope="col">what it does</th><th scope="col">built with</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><a href="https://github.com/PantoYT/termwall">termwall</a></td>
+        <td>A live system-stats wallpaper in the style of fastfetch for Wallpaper Engine and Lively: seven layouts, 14 themes, distro or GIF logos, CRT effects, a different look per monitor.</td>
+        <td>Python, JavaScript</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/PantoYT/TubeYou">TubeYou</a></td>
+        <td>A video platform with no web framework: upload and streaming over HTTP range requests, subscriptions, threaded comments, search, email verification, a ranked feed. MVC written by hand.</td>
+        <td>PHP, MariaDB, Docker</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/PantoYT/chip8-studio">CHIP-8 Studio</a></td>
+        <td>Emulator, assembler, disassembler and debugger in one HTML file that works offline. 49 tests.</td>
+        <td>JavaScript</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/PantoYT/dropgate">dropgate</a></td>
+        <td>Send a file as a tokenised link: expiry, passwords, download limits, burn after download. One Python file, no dependencies; the admin panel never reaches the internet.</td>
+        <td>Python</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/PantoYT/gitdesk">gitdesk</a></td>
+        <td>One panel over every git repository on a machine: work that was never pushed, copies on a USB drive, a secret one command from leaving.</td>
+        <td>Python</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/PantoYT/VulcanScope">VulcanScope</a></td>
+        <td>Exports the eduVulcan school gradebook and turns it into an offline dashboard.</td>
+        <td>C#, .NET, Python</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/PantoYT/Espero-Bot">Espero-Bot</a></td>
+        <td>A robot that teaches Esperanto, for WRO 2026 Future Innovators.</td>
+        <td>Python</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/PantoYT/Sorting">Sorting</a></td>
+        <td>100 sorting algorithms with benchmarks and visualizations.</td>
+        <td>Python</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="more">The rest: <a href="https://github.com/PantoYT?tab=repositories">github.com/PantoYT</a></p>
+</section>
 
-      <article class="work-item">
-        <h3>Pontifex</h3>
-        <p>Infrastructure tickets matched against runbooks, diagnosed, then proposed for a human to approve behind a hard rail. Working engine, channels still mocked.</p>
-      </article>
+<section id="demos">
+  <h2><span class="t">$</span> run --here</h2>
+  <div class="demos">
+    <figure>
+      <a class="frame termwall" href="demos/termwall/index.html?demo&amp;layout=board"><span>termwall, board layout</span></a>
+      <figcaption>The board layout: boxes like btop. Every layout and theme can be tried in the demo through the address: <code>?demo&amp;layout=htop</code>.</figcaption>
+    </figure>
+    <figure>
+      <a class="frame chip8" href="demos/chip8/"><span>CHIP-8 Studio</span></a>
+      <figcaption>Load a ROM, step through it, write your own in the assembler. Opens in this window.</figcaption>
+    </figure>
+  </div>
+</section>
 
-      <article class="work-item">
-        <h3>panto-os <a href="https://github.com/PantoYT/panto-os">repo</a></h3>
-        <p>A system dashboard that runs as a live wallpaper: machine stats, Docker control, and a planner that pulls the school timetable in by itself.</p>
-      </article>
-
-      <article class="work-item">
-        <h3>VulcanScope <a href="https://github.com/PantoYT/VulcanScope">repo</a></h3>
-        <p>A school e-register exported into one offline HTML file. Device pairing with RSA signed requests, worked out from reverse engineering rather than docs.</p>
-      </article>
-
-      <article class="work-item">
-        <h3>kroj <a href="https://github.com/PantoYT/kroj">repo</a></h3>
-        <p>A TrueType engine from scratch: sfnt parser, contours, kerning, antialiased rasterisation, own PNG writer. Clean across all 337 fonts on my machine.</p>
-      </article>
-
-      <article class="work-item">
-        <h3>Sorting <a href="https://github.com/PantoYT/Sorting">repo</a></h3>
-        <p>One hundred sorting algorithms, from production grade to deliberately absurd, benchmarked and animated side by side.</p>
-      </article>
-
-    </div>
-  </section>
-</div>
-
-<div class="shell">
-  <section id="lab">
-    <div class="homelab reveal">
-      <h2 class="section-head">Where I learn the things code cannot teach</h2>
-      <p>
-        One Ubuntu machine running roughly 25 containers: self hosted Git, storage, media,
-        dashboards, monitoring. Nothing is port forwarded. Everything reaches the internet
-        through a tunnel and sits behind SSO, and administration runs over a private mesh.
-      </p>
-      <p>
-        You can check that claim without my help. Pick any service subdomain on this domain
-        and you will land on a login screen rather than inside the service.
-      </p>
-      <p>
-        It went down once in a way I could not explain, and the fix erased the evidence
-        before I could read it. So now the machine records its own configuration on a
-        schedule, and the next outage will have a before.
-      </p>
-    </div>
-  </section>
-</div>
+<section id="contact">
+  <h2><span class="t">$</span> cat contact</h2>
+  <dl class="contact">
+    <dt>Mail</dt><dd><a href="mailto:contact@panto-dev.com">contact@panto-dev.com</a></dd>
+    <dt>GitHub</dt><dd><a href="https://github.com/PantoYT">PantoYT</a></dd>
+    <dt>YouTube</dt><dd><a href="https://www.youtube.com/@pantoyt">@pantoyt</a></dd>
+    <dt>Steam</dt><dd><a href="https://steamcommunity.com/id/pantoyt/myworkshopfiles/">Scrap Mechanic workshop</a></dd>
+  </dl>
+</section>
 
 </main>
 
-<div class="shell">
-  <footer class="site-footer">
-    <a href="mailto:contact@panto-dev.com">contact@panto-dev.com</a>
-    <nav>
-      <a href="https://github.com/PantoYT">GitHub</a>
-      <a href="https://www.linkedin.com/in/wojciech-ha%C5%82asa-bb94743a1">LinkedIn</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
-    </nav>
-  </footer>
-</div>
+<footer class="site-footer">
+  <a href="/privacy">privacy</a>
+  <a href="/terms">terms</a>
+  <a href="https://github.com/PantoYT/panto-dev-www">source of this page</a>
+</footer>
 
+<script>
+// The page wears termwall's palettes. The choice is remembered in this browser only.
+const THEMES = {"mint": {"bg": "#171717", "accent": "#b5f4e7", "secondary": "#7faca3", "text": "#939fa1", "dim": "#4b5252", "faint": "#242626"}, "catppuccin": {"bg": "#1e1e2e", "accent": "#cba6f7", "secondary": "#89b4fa", "text": "#cdd6f4", "dim": "#6c7086", "faint": "#313244"}, "gruvbox": {"bg": "#282828", "accent": "#fabd2f", "secondary": "#8ec07c", "text": "#ebdbb2", "dim": "#928374", "faint": "#3c3836"}, "nord": {"bg": "#2e3440", "accent": "#88c0d0", "secondary": "#81a1c1", "text": "#d8dee9", "dim": "#4c566a", "faint": "#3b4252"}, "dracula": {"bg": "#282a36", "accent": "#bd93f9", "secondary": "#ff79c6", "text": "#f8f8f2", "dim": "#6272a4", "faint": "#44475a"}, "tokyo-night": {"bg": "#1a1b26", "accent": "#7aa2f7", "secondary": "#bb9af7", "text": "#c0caf5", "dim": "#565f89", "faint": "#24283b"}, "rose-pine": {"bg": "#191724", "accent": "#ebbcba", "secondary": "#c4a7e7", "text": "#e0def4", "dim": "#6e6a86", "faint": "#26233a"}, "everforest": {"bg": "#2d353b", "accent": "#a7c080", "secondary": "#83c092", "text": "#d3c6aa", "dim": "#859289", "faint": "#343f44"}, "kanagawa": {"bg": "#1f1f28", "accent": "#7e9cd8", "secondary": "#957fb8", "text": "#dcd7ba", "dim": "#727169", "faint": "#2a2a37"}, "solarized": {"bg": "#002b36", "accent": "#268bd2", "secondary": "#2aa198", "text": "#93a1a1", "dim": "#586e75", "faint": "#073642"}, "one-dark": {"bg": "#282c34", "accent": "#61afef", "secondary": "#c678dd", "text": "#abb2bf", "dim": "#5c6370", "faint": "#2c313a"}, "monokai": {"bg": "#272822", "accent": "#a6e22e", "secondary": "#f92672", "text": "#f8f8f2", "dim": "#75715e", "faint": "#3e3d32"}, "amber": {"bg": "#120d02", "accent": "#ffb000", "secondary": "#cc8c00", "text": "#e0a020", "dim": "#6b4a00", "faint": "#241a04"}, "phosphor": {"bg": "#050f07", "accent": "#33ff66", "secondary": "#1fbf4a", "text": "#2fe05a", "dim": "#145c27", "faint": "#0a1f0e"}};
+const KEYS = ["bg", "accent", "secondary", "text", "dim", "faint"];
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+const select = document.getElementById("theme"), crt = document.getElementById("crt");
+const demo = document.getElementById("termwall-demo");
+for (const name of Object.keys(THEMES)) select.add(new Option(name, name));
+
+function apply(name) {
+  const t = THEMES[name] || THEMES.mint;
+  for (const k of KEYS) document.documentElement.style.setProperty("--" + k, t[k]);
+  document.querySelector('meta[name="theme-color"]').content = t.bg;
+  select.value = name;
+  // the demo takes the same palette through its address (demo mode only)
+  const pal = KEYS.map(k => k + "=" + t[k].slice(1)).join("&");
+  const url = "demos/termwall/index.html?demo&distro=cycle&" + pal + (crt.checked ? "&effects=crt,glow" : "");
+  if (demo.getAttribute("src") !== url) demo.src = url;  // the default is already in the HTML: no second load
+}
+select.addEventListener("change", () => { store.set("theme", select.value); apply(select.value); });
+crt.addEventListener("change", () => {
+  document.body.classList.toggle("crt", crt.checked);
+  store.set("crt", crt.checked ? "1" : "");
+  apply(select.value);
+});
+crt.checked = store.get("crt") === "1";
+document.body.classList.toggle("crt", crt.checked);
+apply(THEMES[store.get("theme")] ? store.get("theme") : "mint");
+</script>
 </body>
 </html>

@@ -1,0 +1,1 @@
+window.TERMWALL_TOKEN = "";

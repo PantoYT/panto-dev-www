@@ -8,11 +8,14 @@ Plain static HTML and one stylesheet. No framework, no build step, no dependenci
 ## Layout
 
 ```
-index.html      portfolio
+index.html      the page: a fastfetch-style terminal in termwall's palettes (theme picker, crt)
 privacy.html    served at /privacy
 terms.html      served at /terms
-style.css       shared stylesheet, light/dark via prefers-color-scheme
-demos/          self-contained project demos (snapshots, see below)
+404.html        served with status 404 for any unknown path (without it Pages answers 200)
+style.css       shared stylesheet, dark only, colors swapped by index.html
+fonts/          JetBrains Mono (SIL OFL), self-hosted
+demos/          self-contained project demos (snapshots, see below) and their preview images
+favicon.svg, apple-touch-icon.png, og.png, robots.txt, sitemap.xml
 ```
 
 ## Deployment
@@ -32,9 +35,9 @@ python -m http.server 8123
 ## demos/ are snapshots
 
 The files under `demos/` are copies taken from their own repositories
-([regexplode](https://github.com/PantoYT/regexplode),
-[physarum](https://github.com/PantoYT/physarum),
-[particle-life](https://github.com/PantoYT/particle-life)).
+(regexplode, physarum, particle-life, [termwall](https://github.com/PantoYT/termwall) in demo
+mode, [CHIP-8 Studio](https://github.com/PantoYT/chip8-studio)). og.png and the demo previews
+are screenshots; retake them after a visible change.
 Updating an upstream project does **not** update the copy here. They are duplicated on
 purpose: each is a single self-contained HTML file, so the site stays dependency-free.
 
