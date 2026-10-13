@@ -77,9 +77,30 @@
   </div>
 
   <figure class="screen">
-    <iframe id="termwall-demo" src="demos/termwall/?demo&amp;distro=cycle&amp;bg=171717&amp;accent=b5f4e7&amp;secondary=7faca3&amp;text=939fa1&amp;dim=4b5252&amp;faint=242626" title="termwall in demo mode: a live system-stats wallpaper with made-up stats" loading="eager"></iframe>
-    <figcaption>termwall, running in this page with made-up stats; it follows the theme picker. <a href="demos/termwall/?demo&amp;distro=cycle">full screen</a>, or <a href="demos/termwall/?demo&amp;layout=board">the board layout</a></figcaption>
+    <div class="screen-wrap">
+      <iframe id="termwall-demo" src="demos/termwall/?demo&amp;distro=cycle" title="termwall in demo mode: a live system-stats wallpaper with made-up stats" loading="eager"></iframe>
+      <button type="button" class="screen-open" id="tw-open" aria-label="Configure termwall"></button>
+    </div>
+    <figcaption>termwall, running in this page with made-up stats. Click it to change the look and get the <code>termwall.toml</code>. <a id="tw-full" href="demos/termwall/?demo&amp;distro=cycle">full screen</a></figcaption>
   </figure>
+  <details class="twconf" id="tw-conf">
+    <summary><span class="t">$</span> termwall config</summary>
+    <div class="twconf-body">
+      <div class="twconf-opts">
+        <label>layout <select data-k="layout"></select></label>
+        <label>theme <select data-k="theme"></select></label>
+        <label>logo <select data-k="logo"></select></label>
+        <label>bars <select data-k="bars"></select></label>
+        <fieldset><legend>effects</legend><span id="tw-fx"></span></fieldset>
+      </div>
+      <pre class="twconf-toml" id="tw-toml" aria-live="polite"></pre>
+      <p class="twconf-actions">
+        <button type="button" id="tw-copy">copy</button>
+        <button type="button" id="tw-save">download termwall.toml</button>
+        <span class="dim">Paste into <code>termwall.toml</code> (<code>termwall config</code> opens it); a missing line keeps its default.</span>
+      </p>
+    </div>
+  </details>
 </section>
 
 <section id="projects">
@@ -173,7 +194,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
 };
 const select = document.getElementById("theme"), crt = document.getElementById("crt");
-const demo = document.getElementById("termwall-demo"), chip8 = document.getElementById("chip8-link");
+const chip8 = document.getElementById("chip8-link");
 // CHIP-8 Studio has four phosphors; pick the one closest to the theme
 const PHOS = {"amber": "amber", "gruvbox": "amber", "rose-pine": "paper", "dracula": "paper", "catppuccin": "ice",
   "nord": "ice", "tokyo-night": "ice", "kanagawa": "ice", "solarized": "ice", "one-dark": "ice"};
@@ -184,21 +205,77 @@ function apply(name) {
   for (const k of KEYS) document.documentElement.style.setProperty("--" + k, t[k]);
   document.querySelector('meta[name="theme-color"]').content = t.bg;
   select.value = name;
-  // the demo takes the same palette through its address (demo mode only)
-  const pal = KEYS.map(k => k + "=" + t[k].slice(1)).join("&");
-  const url = "demos/termwall/?demo&distro=cycle&" + pal + (crt.checked ? "&effects=crt,glow" : "");
-  if (demo.getAttribute("src") !== url) demo.src = url;  // the default is already in the HTML: no second load
   chip8.href = "demos/chip8/" + (PHOS[name] ? "?phos=" + PHOS[name] : "");
 }
 select.addEventListener("change", () => { store.set("theme", select.value); apply(select.value); });
 crt.addEventListener("change", () => {
   document.body.classList.toggle("crt", crt.checked);
   store.set("crt", crt.checked ? "1" : "");
-  apply(select.value);
 });
 crt.checked = store.get("crt") === "1";
 document.body.classList.toggle("crt", crt.checked);
 apply(THEMES[store.get("theme")] ? store.get("theme") : "mint");
+
+// termwall config: the choices drive the demo and become the lines of termwall.toml.
+// Only what differs from termwall's defaults is written, so the snippet stays short.
+const TW = {
+  layout: ["fetch", "board", "htop", "minimal", "logo"],
+  theme: ["distro", ...Object.keys(THEMES)],
+  logo: ["cycle", "windows", "arch", "ubuntu", "debian", "fedora", "linuxmint", "manjaro", "nixos",
+         "opensuse-tumbleweed", "gentoo", "endeavouros", "pop", "cachyos", "void", "kali", "alpine"],
+  bars: ["blocks", "shade", "dots", "line"],
+  effects: ["crt", "glow", "flicker", "roll", "chroma", "curve", "noise"],
+};
+const TW_DEFAULT = {layout: "fetch", theme: "auto", logo: "auto", bars: "blocks", effects: []};
+const twConf = document.getElementById("tw-conf"), twFrame = document.getElementById("termwall-demo");
+const twPick = {layout: "fetch", theme: "distro", logo: "cycle", bars: "blocks", effects: []};
+for (const sel of twConf.querySelectorAll("select[data-k]")) {
+  for (const v of TW[sel.dataset.k]) sel.add(new Option(v === "cycle" ? "cycle (demo only)" : v, v));
+  sel.value = twPick[sel.dataset.k];
+  sel.addEventListener("change", () => { twPick[sel.dataset.k] = sel.value; twUpdate(); });
+}
+document.getElementById("tw-fx").innerHTML = TW.effects.map(e =>
+  `<label class="check"><input type="checkbox" value="${e}"> ${e}</label>`).join("");
+for (const box of twConf.querySelectorAll("#tw-fx input")) box.addEventListener("change", () => {
+  twPick.effects = [...twConf.querySelectorAll("#tw-fx input:checked")].map(b => b.value); twUpdate();
+});
+
+function twUrl(p) {
+  const q = ["demo", "layout=" + p.layout, "bars=" + p.bars];
+  if (p.logo === "cycle") q.push("distro=cycle");
+  else if (p.logo === "windows") q.push("logo=windows");
+  else q.push("distro=" + p.logo, "logo=" + p.logo);
+  if (p.effects.length) q.push("effects=" + p.effects.join(","));
+  // "distro" is termwall's own logo palette: no colors in the address
+  if (p.theme !== "distro") q.push(...KEYS.map(k => k + "=" + THEMES[p.theme][k].slice(1)));
+  return "demos/termwall/?" + q.join("&");
+}
+function twToml(p) {
+  const want = {...p, logo: p.logo === "cycle" ? "auto" : p.logo}, out = [];
+  for (const k of ["layout", "theme", "logo", "bars"]) if (want[k] !== TW_DEFAULT[k]) out.push(`${k} = "${want[k]}"`);
+  if (want.effects.length) out.push(`effects = [${want.effects.map(e => `"${e}"`).join(", ")}]`);
+  return ["# termwall.toml", ...(out.length ? out : ["# every setting at its default"]), ""].join("\n");
+}
+function twUpdate() {
+  const url = twUrl(twPick);
+  if (twFrame.getAttribute("src") !== url) twFrame.src = url;
+  document.getElementById("tw-full").href = url;
+  document.getElementById("tw-toml").textContent = twToml(twPick);
+}
+document.getElementById("tw-open").addEventListener("click", () => {
+  twConf.open = true; twConf.scrollIntoView({block: "nearest", behavior: "smooth"});
+});
+document.getElementById("tw-copy").addEventListener("click", async (e) => {
+  try { await navigator.clipboard.writeText(twToml(twPick)); e.target.textContent = "copied"; }
+  catch (err) { e.target.textContent = "select it and copy"; }
+  setTimeout(() => { e.target.textContent = "copy"; }, 1500);
+});
+document.getElementById("tw-save").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([twToml(twPick)], {type: "application/toml"}));
+  a.download = "termwall.toml"; a.click(); URL.revokeObjectURL(a.href);
+});
+twUpdate();
 </script>
 </body>
 </html>

@@ -74,6 +74,28 @@ dd { margin: 0; color: var(--text); }
 }
 figcaption { color: var(--text); font-size: 13px; margin-top: 10px; }
 
+/* termwall config: a click on the demo opens it */
+.screen-wrap { position: relative; }
+.screen-open { position: absolute; inset: 0; width: 100%; border: 0; background: none; cursor: pointer; border-radius: 4px; }
+.screen-open:hover, .screen-open:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.twconf { grid-column: 1 / -1; border-top: 1px solid var(--faint); padding-top: 10px; }
+.twconf summary { cursor: pointer; color: var(--text); width: max-content; }
+.twconf summary:hover { color: var(--accent); }
+.twconf-body { display: grid; gap: 12px; margin-top: 12px; }
+.twconf-opts { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.twconf-opts label { display: flex; gap: 8px; align-items: center; color: var(--text); }
+.twconf fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+#tw-fx { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.twconf legend { float: left; color: var(--text); margin-right: 8px; padding: 0; }
+.twconf-toml { margin: 0; padding: 10px 12px; background: var(--faint); border-radius: 4px; color: var(--accent); overflow-x: auto; }
+.twconf-actions { margin: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; }
+.twconf button {
+  font: inherit; color: var(--accent); background: var(--faint); cursor: pointer;
+  border: 1px solid var(--dim); border-radius: 3px; padding: 2px 10px;
+}
+.twconf button:hover { border-color: var(--accent); }
+.dim { color: var(--dim); }
+
 /* projects: a process table */
 .procs { width: 100%; border-collapse: collapse; }
 .procs th { text-align: left; font-weight: 700; color: var(--bg); background: var(--secondary); padding: 3px 12px; }
