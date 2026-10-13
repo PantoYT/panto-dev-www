@@ -92,7 +92,7 @@ figcaption { color: var(--text); font-size: 13px; margin-top: 10px; }
 }
 .frame span { background: var(--bg); padding: 2px 8px; }
 .frame:hover { border-color: var(--accent); }
-.frame.termwall { background-image: url(demos/termwall-board.png); }
+.frame.tubeyou { background-image: url(demos/tubeyou.jpg); }
 .frame.chip8 { background-image: url(demos/chip8.png); }
 
 .contact { max-width: 34rem; }
@@ -126,6 +126,8 @@ body.crt .k, body.crt h1, body.crt .logo { text-shadow: 0 0 7px currentColor; }
   body { font-size: 14px; }
   .fetch-body { flex-direction: column; gap: 18px; }
   .logo { font-size: 12px; }
+  /* .logo.gear outranks .logo, so the gear needs its own size: about a third of the screen height */
+  .logo.gear { font-size: 8px; }
   .procs thead { display: none; }
   .procs tr { display: block; padding: 12px 0; border-bottom: 1px solid var(--faint); }
   .procs td { display: block; padding: 2px 0; border: 0; white-space: normal !important; }
