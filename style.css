@@ -49,7 +49,9 @@ h2 { font-size: 15px; font-weight: 400; color: var(--text); margin: 0 0 22px; }
 
 /* hero: fastfetch on the left, termwall on the right */
 .hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; align-items: center; padding-top: 48px; }
-@media (min-width: 1180px) { .hero { grid-template-columns: auto minmax(0, 1fr); gap: 56px; } }
+/* side by side only where termwall still gets a real size; below that it sits under the fetch, large */
+.screen { max-width: 960px; }
+@media (min-width: 1760px) { .hero { grid-template-columns: auto minmax(0, 1fr); gap: 56px; } .screen { max-width: none; } }
 .prompt { margin: 0 0 22px; color: var(--text); }
 .fetch-body { display: flex; gap: 40px; align-items: flex-start; }
 .logo { margin: 4px 0 0; color: var(--accent); font: 700 15px/1.2 var(--mono); }

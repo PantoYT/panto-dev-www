@@ -208,12 +208,14 @@ function apply(name) {
   chip8.href = "demos/chip8/" + (PHOS[name] ? "?phos=" + PHOS[name] : "");
 }
 select.addEventListener("change", () => { store.set("theme", select.value); apply(select.value); });
-crt.addEventListener("change", () => {
-  document.body.classList.toggle("crt", crt.checked);
-  store.set("crt", crt.checked ? "1" : "");
-});
-crt.checked = store.get("crt") === "1";
-document.body.classList.toggle("crt", crt.checked);
+// one crt switch: the page's and termwall's "crt" effect are the same checkbox in two places
+function setPageCrt(on) {
+  crt.checked = on;
+  document.body.classList.toggle("crt", on);
+  store.set("crt", on ? "1" : "");
+}
+crt.addEventListener("change", () => { setPageCrt(crt.checked); twSyncCrt(); });
+setPageCrt(store.get("crt") === "1");
 apply(THEMES[store.get("theme")] ? store.get("theme") : "mint");
 
 // termwall config: the choices drive the demo and become the lines of termwall.toml.
@@ -236,16 +238,24 @@ for (const sel of twConf.querySelectorAll("select[data-k]")) {
 }
 document.getElementById("tw-fx").innerHTML = TW.effects.map(e =>
   `<label class="check"><input type="checkbox" value="${e}"> ${e}</label>`).join("");
+const twFx = () => { twPick.effects = [...twConf.querySelectorAll("#tw-fx input:checked")].map(b => b.value); };
 for (const box of twConf.querySelectorAll("#tw-fx input")) box.addEventListener("change", () => {
-  twPick.effects = [...twConf.querySelectorAll("#tw-fx input:checked")].map(b => b.value); twUpdate();
+  if (box.value === "crt") setPageCrt(box.checked);
+  twFx(); twUpdate();
 });
+function twSyncCrt() {
+  twConf.querySelector('#tw-fx input[value="crt"]').checked = crt.checked;
+  twFx(); twUpdate();
+}
 
-function twUrl(p) {
+function twUrl(p, inPage) {
   const q = ["demo", "layout=" + p.layout, "bars=" + p.bars];
   if (p.logo === "cycle") q.push("distro=cycle");
   else if (p.logo === "windows") q.push("logo=windows");
   else q.push("distro=" + p.logo, "logo=" + p.logo);
-  if (p.effects.length) q.push("effects=" + p.effects.join(","));
+  // in the page, the page's own crt already lies over the demo: a second set of scanlines only muddies it
+  const fx = inPage ? p.effects.filter(e => e !== "crt") : p.effects;
+  if (fx.length) q.push("effects=" + fx.join(","));
   // "distro" is termwall's own logo palette: no colors in the address
   if (p.theme !== "distro") q.push(...KEYS.map(k => k + "=" + THEMES[p.theme][k].slice(1)));
   return "demos/termwall/?" + q.join("&");
@@ -257,9 +267,9 @@ function twToml(p) {
   return ["# termwall.toml", ...(out.length ? out : ["# every setting at its default"]), ""].join("\n");
 }
 function twUpdate() {
-  const url = twUrl(twPick);
+  const url = twUrl(twPick, true);
   if (twFrame.getAttribute("src") !== url) twFrame.src = url;
-  document.getElementById("tw-full").href = url;
+  document.getElementById("tw-full").href = twUrl(twPick, false);
   document.getElementById("tw-toml").textContent = twToml(twPick);
 }
 document.getElementById("tw-open").addEventListener("click", () => {
@@ -275,7 +285,7 @@ document.getElementById("tw-save").addEventListener("click", () => {
   a.href = URL.createObjectURL(new Blob([twToml(twPick)], {type: "application/toml"}));
   a.download = "termwall.toml"; a.click(); URL.revokeObjectURL(a.href);
 });
-twUpdate();
+twSyncCrt();
 </script>
 </body>
 </html>
