@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Physarum GPU — śluzowiec na 3060</title>
+<title>Physarum GPU</title>
 <style>
   :root{--bg:#05060a;--panel:#0f121b;--edge:#20263a;--ink:#e7eaf3;--dim:#7f889e;--accent:#f0a24a}
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
     font:13px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-  /* canvas to element zastępowany: przy samym inset:0 zostałby na intrinsic 300×150 */
+  /* canvas is a replaced element: with inset:0 alone it would stay at its intrinsic 300×150 */
   #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;cursor:crosshair}
   #hud{position:fixed;top:14px;left:14px;width:308px;max-height:calc(100vh - 28px);
     background:color-mix(in srgb,var(--panel) 90%,transparent);backdrop-filter:blur(12px);
@@ -45,8 +45,6 @@
   #stat{position:fixed;bottom:12px;right:14px;color:var(--dim);font:11px/1.4 ui-monospace,monospace;
     background:color-mix(in srgb,var(--panel) 85%,transparent);border:1px solid var(--edge);border-radius:8px;
     padding:7px 10px;pointer-events:none;text-align:right;white-space:pre}
-  #tag{position:fixed;bottom:12px;left:14px;color:var(--dim);font-size:11px;pointer-events:none}
-  #tag b{color:var(--accent)}
   #err{position:fixed;inset:auto 14px 14px 14px;max-height:60vh;overflow:auto;background:#1a0e12;
     border:1px solid #5a2230;border-radius:10px;padding:14px;color:#ffb4b4;font:12px/1.5 ui-monospace,monospace;
     white-space:pre-wrap;display:none;z-index:9}
@@ -61,81 +59,80 @@
 <div id="hud">
   <h1>Physarum&nbsp;·&nbsp;GPU</h1>
   <div class="world">
-    <span class="id" id="world-id">Hodowla #—</span>
+    <span class="id" id="world-id">Culture #—</span>
     <span class="mini">
-      <button id="b-prev" title="poprzednia">‹</button>
-      <button id="b-next" title="następna">›</button>
+      <button id="b-prev" title="previous">‹</button>
+      <button id="b-next" title="next">›</button>
     </span>
   </div>
-  <p class="sub" id="world-sub">WebGL2 GPGPU — agenci i feromon liczą się na karcie.</p>
+  <p class="sub" id="world-sub">WebGL2 GPGPU: agents and pheromone run on the graphics card.</p>
 
-  <button id="b-new" class="pri wide">✦ Nowa hodowla (kurator)</button>
+  <button id="b-new" class="pri wide">✦ New culture (curator)</button>
   <div class="btns" style="margin-top:7px">
-    <button id="b-disco">Auto-cykl</button>
-    <button id="b-copy">Kopiuj link</button>
+    <button id="b-disco">Auto-cycle</button>
+    <button id="b-copy">Copy link</button>
   </div>
 
   <div class="grp"></div>
-  <div class="grp-t">Kolonia</div>
-  <div class="row"><label>Agenci</label><select id="sel-count"></select></div>
-  <div class="row"><label>Gatunki</label><input id="s-species" type="range" min="1" max="3" step="1"><output id="o-species"></output></div>
-  <div class="row"><label>Wzajemność</label><input id="s-cross" type="range" min="-1" max="1" step="0.02"><output id="o-cross"></output></div>
-  <div class="row"><label>Kroki/klatkę</label><input id="s-steps" type="range" min="1" max="4" step="1"><output id="o-steps"></output></div>
+  <div class="grp-t">Colony</div>
+  <div class="row"><label>Agents</label><select id="sel-count"></select></div>
+  <div class="row"><label>Species</label><input id="s-species" type="range" min="1" max="3" step="1"><output id="o-species"></output></div>
+  <div class="row"><label>Reciprocity</label><input id="s-cross" type="range" min="-1" max="1" step="0.02"><output id="o-cross"></output></div>
+  <div class="row"><label>Steps/frame</label><input id="s-steps" type="range" min="1" max="4" step="1"><output id="o-steps"></output></div>
 
   <div class="grp"></div>
-  <div class="grp-t">Ruch</div>
-  <div class="row"><label>Prędkość</label><input id="s-speed" type="range" min="0.1" max="3" step="0.05"><output id="o-speed"></output></div>
-  <div class="row"><label>Kąt czujnika</label><input id="s-sensAng" type="range" min="3" max="80" step="1"><output id="o-sensAng"></output></div>
-  <div class="row"><label>Zasięg czujnika</label><input id="s-sensDist" type="range" min="1" max="40" step="0.5"><output id="o-sensDist"></output></div>
-  <div class="row"><label>Skręt</label><input id="s-turn" type="range" min="0.02" max="1.4" step="0.01"><output id="o-turn"></output></div>
-  <div class="row"><label>Losowość</label><input id="s-jitter" type="range" min="0" max="1" step="0.01"><output id="o-jitter"></output></div>
+  <div class="grp-t">Movement</div>
+  <div class="row"><label>Speed</label><input id="s-speed" type="range" min="0.1" max="3" step="0.05"><output id="o-speed"></output></div>
+  <div class="row"><label>Sensor angle</label><input id="s-sensAng" type="range" min="3" max="80" step="1"><output id="o-sensAng"></output></div>
+  <div class="row"><label>Sensor distance</label><input id="s-sensDist" type="range" min="1" max="40" step="0.5"><output id="o-sensDist"></output></div>
+  <div class="row"><label>Turn</label><input id="s-turn" type="range" min="0.02" max="1.4" step="0.01"><output id="o-turn"></output></div>
+  <div class="row"><label>Randomness</label><input id="s-jitter" type="range" min="0" max="1" step="0.01"><output id="o-jitter"></output></div>
 
   <div class="grp"></div>
-  <div class="grp-t">Feromon</div>
-  <div class="row"><label>Depozyt</label><input id="s-deposit" type="range" min="0.02" max="1" step="0.01"><output id="o-deposit"></output></div>
-  <div class="row"><label>Zanik</label><input id="s-decay" type="range" min="0.85" max="0.995" step="0.001"><output id="o-decay"></output></div>
-  <div class="row"><label>Dyfuzja</label><input id="s-diffuse" type="range" min="0" max="1" step="0.01"><output id="o-diffuse"></output></div>
+  <div class="grp-t">Pheromone</div>
+  <div class="row"><label>Deposit</label><input id="s-deposit" type="range" min="0.02" max="1" step="0.01"><output id="o-deposit"></output></div>
+  <div class="row"><label>Decay</label><input id="s-decay" type="range" min="0.85" max="0.995" step="0.001"><output id="o-decay"></output></div>
+  <div class="row"><label>Diffusion</label><input id="s-diffuse" type="range" min="0" max="1" step="0.01"><output id="o-diffuse"></output></div>
 
   <div class="grp"></div>
-  <div class="grp-t">Wygląd</div>
-  <div class="row"><label>Paleta</label><select id="sel-pal"></select></div>
-  <div class="row"><label>Ekspozycja</label><input id="s-exp" type="range" min="0.2" max="6" step="0.05"><output id="o-exp"></output></div>
-  <div class="row"><label>Poświata</label><input id="s-glow" type="range" min="0" max="1.5" step="0.02"><output id="o-glow"></output></div>
-  <div class="row"><label>Rozdzielczość</label><select id="sel-qual"></select></div>
+  <div class="grp-t">Look</div>
+  <div class="row"><label>Palette</label><select id="sel-pal"></select></div>
+  <div class="row"><label>Exposure</label><input id="s-exp" type="range" min="0.2" max="6" step="0.05"><output id="o-exp"></output></div>
+  <div class="row"><label>Glow</label><input id="s-glow" type="range" min="0" max="1.5" step="0.02"><output id="o-glow"></output></div>
+  <div class="row"><label>Resolution</label><select id="sel-qual"></select></div>
 
   <div class="btns">
-    <button id="b-reset">Zasiej od nowa</button>
-    <button id="b-clear">Zetrzyj ślad</button>
-    <button id="b-pause">Pauza</button>
-    <button id="b-shot">Zrzut PNG</button>
+    <button id="b-reset">Reseed</button>
+    <button id="b-clear">Clear trail</button>
+    <button id="b-pause">Pause</button>
+    <button id="b-shot">Save PNG</button>
   </div>
 
   <p class="foot">
-    Klik/dotyk = pokarm (agenci płyną do kursora), <kbd>Shift</kbd> = odpych.<br>
-    <kbd>H</kbd> panel · <kbd>Spacja</kbd> pauza · <kbd>N</kbd> nowa hodowla ·
-    <kbd>←</kbd><kbd>→</kbd> hodowle · <kbd>D</kbd> auto-cykl · <kbd>R</kbd> zasiej ·
-    <kbd>C</kbd> zetrzyj · <kbd>S</kbd> zrzut
+    Click / touch = food (agents flow to the cursor), <kbd>Shift</kbd> pushes them away.<br>
+    <kbd>H</kbd> panel · <kbd>Space</kbd> pause · <kbd>N</kbd> new culture ·
+    <kbd>←</kbd><kbd>→</kbd> cultures · <kbd>D</kbd> auto-cycle · <kbd>R</kbd> reseed ·
+    <kbd>C</kbd> clear trail · <kbd>S</kbd> save PNG
   </p>
 </div>
 
 <div id="stat">—</div>
-<div id="tag">dla <b>Panto</b> · RTX-ready</div>
 <div id="err"></div>
 <div class="toast" id="toast"></div>
 
 <script>
 /* ════════════════════════════════════════════════════════════════════════════
-   Physarum polycephalum — model Jeffa Jonesa (2010) w całości na GPU.
-   Agent ma pozycję i kierunek, trzy czujniki (lewo/przód/prawo) próbkują mapę
-   feromonu, agent skręca w stronę najsilniejszego sygnału i sam zostawia ślad.
-   Mapa co klatkę dyfunduje i wyparowuje. Z tych trzech reguł — bez żadnego
-   planu sieci — wychodzą struktury transportowe: żyłki, komory, labirynty.
+   Physarum polycephalum: Jeff Jones's model (2010), entirely on the GPU.
+   An agent has a position and a heading; three sensors (left, ahead, right) sample
+   the pheromone map, the agent turns towards the strongest signal and leaves its
+   own trail. Every frame the map diffuses and evaporates. From these three rules,
+   with no plan of a network, transport structures appear: veins, chambers, mazes.
 
-   Cztery przebiegi na krok symulacji:
-     1. agenci   → tekstura RGBA32F (x, y, kąt, gatunek), ping-pong
-     2. depozyt  → gl.POINTS z vertex-texture-fetch, blending addytywny
-     3. dyfuzja  → 9-tap blur + zanik na mapie RGBA16F, ping-pong
-     4. render   → mapowanie kanałów gatunków na paletę, tonemap, poświata
+   Four passes per simulation step:
+     1. agents    -> RGBA32F texture (x, y, angle, species), ping-pong
+     2. deposit   -> gl.POINTS with vertex texture fetch, additive blending
+     3. diffusion -> 9-tap blur + decay on an RGBA16F map, ping-pong
+     4. render    -> species channels mapped to the palette, tonemap, glow
    ════════════════════════════════════════════════════════════════════════════ */
 
 const cvs = document.getElementById('gl');
@@ -148,14 +145,14 @@ function fatal(msg){
   const e=document.getElementById('err'); e.style.display='block'; e.textContent=msg;
   throw new Error(msg);
 }
-if(!gl) fatal('Ta przeglądarka nie daje kontekstu WebGL2.\nPhysarum liczy się na GPU i bez WebGL2 nie ruszy.');
+if(!gl) fatal('This browser gives no WebGL2 context.\nPhysarum runs on the GPU and cannot start without WebGL2.');
 if(!gl.getExtension('EXT_color_buffer_float')){
   gl.getExtension('EXT_color_buffer_half_float');
   if(!gl.getExtension('EXT_color_buffer_float'))
-    fatal('Brak rozszerzenia EXT_color_buffer_float.\nSymulacja renderuje do tekstur zmiennoprzecinkowych — bez tego się nie da.');
+    fatal('No EXT_color_buffer_float extension.\nThe simulation renders to floating-point textures and cannot run without it.');
 }
 
-/* ── shadery ─────────────────────────────────────────────────────────────── */
+/* ── shaders ─────────────────────────────────────────────────────────────── */
 const VS_QUAD = `#version 300 es
 in vec2 a_pos;
 out vec2 v_uv;
@@ -166,8 +163,8 @@ precision highp float;
 precision highp int;
 uniform sampler2D u_agents;
 uniform sampler2D u_trail;
-uniform vec2  u_sim;       // rozdzielczość mapy feromonu (px)
-uniform vec2  u_atex;      // rozdzielczość tekstury agentów (px)
+uniform vec2  u_sim;       // pheromone map resolution (px)
+uniform vec2  u_atex;      // agent texture resolution (px)
 uniform uint  u_frame;
 uniform float u_speed, u_sensAng, u_sensDist, u_turn, u_jitter, u_cross;
 uniform vec2  u_mouse;
@@ -177,10 +174,10 @@ out vec4 o;
 uint hash(uint x){ x^=x>>16u; x*=0x7feb352du; x^=x>>15u; x*=0x846ca68bu; x^=x>>16u; return x; }
 float rnd(uint s){ return float(hash(s))*(1.0/4294967296.0); }
 
-// Węch: próbka mapy w punkcie oddalonym o u_sensDist pikseli pod kątem a.
-// Własny kanał gatunku przyciąga wagą 1, cudze — wagą u_cross (ujemna = wstręt).
+// Smell: sample the map u_sensDist pixels away at angle a.
+// The species' own channel attracts with weight 1, the others with u_cross (negative = aversion).
 float sniff(vec2 p, float a, vec3 mask){
-  vec2 q = p + vec2(cos(a), sin(a)) * u_sensDist / u_sim;   // wrap robi GL_REPEAT
+  vec2 q = p + vec2(cos(a), sin(a)) * u_sensDist / u_sim;   // GL_REPEAT does the wrap
   vec3 t = texture(u_trail, q).rgb;
   return dot(t, mask) + u_cross * dot(t, vec3(1.0) - mask);
 }
@@ -198,27 +195,27 @@ void main(){
   float L = sniff(p, a + u_sensAng, mask);
   float R = sniff(p, a - u_sensAng, mask);
 
-  if (F > L && F > R)      { }                                             // prosto
-  else if (F < L && F < R) { a += (rnd(seed) < 0.5 ? -u_turn : u_turn); }  // remis → losowo
+  if (F > L && F > R)      { }                                             // straight on
+  else if (F < L && F < R) { a += (rnd(seed) < 0.5 ? -u_turn : u_turn); }  // a tie: turn at random
   else if (L > R)          { a += u_turn; }
   else if (R > L)          { a -= u_turn; }
   a += (rnd(seed*7919u) - 0.5) * u_jitter;
 
   if (u_mouseF != 0.0){
     vec2 d = u_mouse - p;
-    d -= round(d);                       // najkrótsza droga po torusie
+    d -= round(d);                       // shortest way round the torus
     vec2 dp = d * u_sim;
     float dist = length(dp);
     if (dist > 0.5){
       vec2 w = dp / dist;
-      if (u_mouseF < 0.0) w = -w;        // odpych = cel po przeciwnej stronie
+      if (u_mouseF < 0.0) w = -w;        // pushing = the target on the opposite side
       vec2 dir = vec2(cos(a), sin(a));
       float cr = dir.x*w.y - dir.y*w.x;
       a += sign(cr) * abs(u_mouseF) * 0.55 / (1.0 + dist*0.006);
     }
   }
 
-  a = mod(a, 6.28318530718);             // bez tego kąt ucieka z precyzji f32
+  a = mod(a, 6.28318530718);             // without this the angle runs out of f32 precision
   p = fract(p + vec2(cos(a), sin(a)) * u_speed / u_sim);
   o = vec4(p, a, sp);
 }`;
@@ -274,7 +271,7 @@ void main(){
       s += texture(u_trail, v_uv + vec2(float(x), float(y))*px).rgb;
   vec3 cur = texture(u_trail, v_uv).rgb;
   vec3 v = mix(cur, s/9.0, u_diffuse) * u_decay;
-  o = vec4(max(v - 0.0002, 0.0), 1.0);   // podłoga, żeby tło schodziło do zera
+  o = vec4(max(v - 0.0002, 0.0), 1.0);   // a floor, so the background reaches zero
 }`;
 
 const FS_SHOW = `#version 300 es
@@ -297,17 +294,17 @@ void main(){
     t += g * (u_glow / 12.0);
   }
   vec3 lin = t.r*u_c0 + t.g*u_c1 + t.b*u_c2;
-  vec3 col = vec3(1.0) - exp(-lin * u_exp);       // tonemap wykładniczy
+  vec3 col = vec3(1.0) - exp(-lin * u_exp);       // exponential tonemap
   col = u_bg + col * (1.0 - u_bg);
   o = vec4(pow(col, vec3(1.0/2.2)), 1.0);
 }`;
 
-/* ── narzędzia GL ────────────────────────────────────────────────────────── */
+/* ── GL helpers ──────────────────────────────────────────────────────────── */
 function sh(type, src){
   const s = gl.createShader(type);
   gl.shaderSource(s, src); gl.compileShader(s);
   if(!gl.getShaderParameter(s, gl.COMPILE_STATUS))
-    fatal('Błąd kompilacji shadera:\n\n' + gl.getShaderInfoLog(s) + '\n\n' +
+    fatal('Shader compile error:\n\n' + gl.getShaderInfoLog(s) + '\n\n' +
           src.split('\n').map((l,i)=>String(i+1).padStart(3)+' | '+l).join('\n'));
   return s;
 }
@@ -317,7 +314,7 @@ function prog(vsSrc, fsSrc){
   gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fsSrc));
   gl.bindAttribLocation(p, 0, 'a_pos');
   gl.linkProgram(p);
-  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) fatal('Błąd linkowania:\n' + gl.getProgramInfoLog(p));
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) fatal('Link error:\n' + gl.getProgramInfoLog(p));
   const u = {};
   const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
   for(let i=0;i<n;i++){ const nm = gl.getActiveUniform(p,i).name; u[nm] = gl.getUniformLocation(p, nm); }
@@ -338,7 +335,7 @@ function fbo(t){
   gl.bindFramebuffer(gl.FRAMEBUFFER, f);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
   const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  if(st !== gl.FRAMEBUFFER_COMPLETE) fatal('Framebuffer niekompletny: 0x' + st.toString(16));
+  if(st !== gl.FRAMEBUFFER_COMPLETE) fatal('Framebuffer incomplete: 0x' + st.toString(16));
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   return f;
 }
@@ -361,43 +358,43 @@ gl.bindVertexArray(null);
 
 function fullscreen(){ gl.bindVertexArray(quadVAO); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.bindVertexArray(null); }
 
-/* ── palety ──────────────────────────────────────────────────────────────── */
+/* ── palettes ────────────────────────────────────────────────────────────── */
 const PALETTES = [
-  {n:'Bursztyn',   c:[[1.00,0.62,0.20],[1.00,0.30,0.10],[1.00,0.90,0.62]], bg:[0.015,0.010,0.006]},
+  {n:'Amber',      c:[[1.00,0.62,0.20],[1.00,0.30,0.10],[1.00,0.90,0.62]], bg:[0.015,0.010,0.006]},
   {n:'Neon',       c:[[0.20,1.00,0.85],[0.95,0.20,0.90],[1.00,0.85,0.25]], bg:[0.010,0.012,0.022]},
-  {n:'Głębia',     c:[[0.15,0.55,1.00],[0.05,0.95,0.85],[0.60,0.30,1.00]], bg:[0.008,0.012,0.028]},
-  {n:'Toksyczny',  c:[[0.55,1.00,0.15],[1.00,0.95,0.10],[0.10,0.90,0.55]], bg:[0.010,0.018,0.010]},
-  {n:'Kość',       c:[[0.95,0.92,0.86],[0.80,0.72,0.62],[1.00,0.98,0.94]], bg:[0.020,0.019,0.018]},
+  {n:'Deep',       c:[[0.15,0.55,1.00],[0.05,0.95,0.85],[0.60,0.30,1.00]], bg:[0.008,0.012,0.028]},
+  {n:'Toxic',      c:[[0.55,1.00,0.15],[1.00,0.95,0.10],[0.10,0.90,0.55]], bg:[0.010,0.018,0.010]},
+  {n:'Bone',       c:[[0.95,0.92,0.86],[0.80,0.72,0.62],[1.00,0.98,0.94]], bg:[0.020,0.019,0.018]},
   {n:'Magma',      c:[[1.00,0.25,0.06],[1.00,0.72,0.10],[0.60,0.06,0.30]], bg:[0.026,0.008,0.008]},
-  {n:'Rentgen',    c:[[0.70,0.90,1.00],[0.35,0.60,0.95],[0.95,1.00,1.00]], bg:[0.006,0.010,0.016]}
+  {n:'X-ray',      c:[[0.70,0.90,1.00],[0.35,0.60,0.95],[0.95,1.00,1.00]], bg:[0.006,0.010,0.016]}
 ];
 
-/* ── kurator: rodzaje hodowli ────────────────────────────────────────────── */
-// Każdy rodzaj to region w przestrzeni parametrów, który daje rozpoznawalny
-// charakter kolonii. Seed losuje punkt wewnątrz regionu.
-// Zakresy dostrojone na oko, nie wzięte z sufitu: dwa bieguny — „Sieć naczyniowa"
-// (pętle i węzły przy gęstości ~0.15) oraz „Zarodniki" (skupiska przy ~0.6) —
-// zostały znalezione eksperymentalnie, reszta leży między nimi. Najważniejsze
-// okazało się tempo zaniku: powyżej ~0.95 ślad żyje tak długo, że filamenty
-// zlewają się w kilka grubych rur i cała struktura ginie.
+/* ── curator: kinds of culture ───────────────────────────────────────────── */
+// Each kind is a region of parameter space that gives a colony a recognisable
+// character. The seed picks a point inside the region.
+// The ranges were tuned by eye, not made up: the two poles, "Vascular network"
+// (loops and nodes at density ~0.15) and "Spores" (clusters at ~0.6), were found
+// by experiment and the rest lie between them. Decay turned out to matter most:
+// above ~0.95 the trail lives so long that the filaments merge into a few thick
+// tubes and the whole structure is lost.
 const GENERA = [
-  {n:'Sieć naczyniowa', speed:[0.8,1.3],  sensAng:[18,26], sensDist:[7,12],  turn:[0.60,0.95], jitter:[0.01,0.06],
+  {n:'Vascular network', speed:[0.8,1.3],  sensAng:[18,26], sensDist:[7,12],  turn:[0.60,0.95], jitter:[0.01,0.06],
                         deposit:[0.35,0.60], decay:[0.895,0.925], diffuse:[0.85,1.00], dens:[0.10,0.20]},
-  {n:'Labirynt',        speed:[0.5,0.9],  sensAng:[38,60], sensDist:[4,8],   turn:[0.50,0.90], jitter:[0.01,0.08],
+  {n:'Maze',            speed:[0.5,0.9],  sensAng:[38,60], sensDist:[4,8],   turn:[0.50,0.90], jitter:[0.01,0.08],
                         deposit:[0.35,0.65], decay:[0.885,0.915], diffuse:[0.80,1.00], dens:[0.30,0.65]},
-  {n:'Zarodniki',       speed:[0.4,0.7],  sensAng:[22,32], sensDist:[3,5],   turn:[0.80,1.10], jitter:[0.02,0.06],
+  {n:'Spores',          speed:[0.4,0.7],  sensAng:[22,32], sensDist:[3,5],   turn:[0.80,1.10], jitter:[0.02,0.06],
                         deposit:[0.35,0.55], decay:[0.870,0.895], diffuse:[0.95,1.00], dens:[0.45,0.65]},
-  {n:'Nerwy',           speed:[1.0,1.8],  sensAng:[9,18],  sensDist:[16,30], turn:[0.15,0.40], jitter:[0.00,0.04],
+  {n:'Nerves',          speed:[1.0,1.8],  sensAng:[9,18],  sensDist:[16,30], turn:[0.15,0.40], jitter:[0.00,0.04],
                         deposit:[0.30,0.50], decay:[0.920,0.945], diffuse:[0.60,0.90], dens:[0.08,0.16]},
-  {n:'Spirale',         speed:[1.2,2.2],  sensAng:[6,14],  sensDist:[10,20], turn:[0.90,1.30], jitter:[0.05,0.20],
+  {n:'Spirals',         speed:[1.2,2.2],  sensAng:[6,14],  sensDist:[10,20], turn:[0.90,1.30], jitter:[0.05,0.20],
                         deposit:[0.30,0.50], decay:[0.900,0.935], diffuse:[0.70,1.00], dens:[0.10,0.25]},
-  {n:'Mgławica',        speed:[1.5,2.6],  sensAng:[28,55], sensDist:[8,18],  turn:[0.40,0.80], jitter:[0.30,0.70],
+  {n:'Nebula',          speed:[1.5,2.6],  sensAng:[28,55], sensDist:[8,18],  turn:[0.40,0.80], jitter:[0.30,0.70],
                         deposit:[0.25,0.45], decay:[0.930,0.955], diffuse:[0.70,1.00], dens:[0.10,0.30]},
-  {n:'Wir',             speed:[1.6,2.8],  sensAng:[10,22], sensDist:[12,26], turn:[1.00,1.35], jitter:[0.03,0.15],
+  {n:'Vortex',          speed:[1.6,2.8],  sensAng:[10,22], sensDist:[12,26], turn:[1.00,1.35], jitter:[0.03,0.15],
                         deposit:[0.30,0.50], decay:[0.910,0.940], diffuse:[0.60,0.90], dens:[0.10,0.20]}
 ];
 
-/* ── stan ────────────────────────────────────────────────────────────────── */
+/* ── state ───────────────────────────────────────────────────────────────── */
 const COUNTS = [
   {n:'65 536 (256²)',   w:256},
   {n:'262 144 (512²)',  w:512},
@@ -406,7 +403,7 @@ const COUNTS = [
 ];
 const QUALS = [{n:'50 %', v:0.5},{n:'70 %', v:0.7},{n:'100 %', v:1.0},{n:'140 %', v:1.4}];
 
-const S = {                     // parametry symulacji
+const S = {                     // simulation parameters
   speed:1.0, sensAng:25, sensDist:9, turn:0.4, jitter:0.06,
   deposit:0.22, decay:0.975, diffuse:0.45, cross:-0.4,
   exp:1.6, glow:0.45, steps:1
@@ -414,21 +411,21 @@ const S = {                     // parametry symulacji
 let SPECIES = 2, AW = 1024, PAL = 0, QUAL = 1.0, SEED = 1, GENUS = 0, SOW = 0;
 let paused = false, disco = false, discoT = 0, frameNo = 0;
 
-let agTex = [], agFbo = [], agPing = 0;      // tekstury agentów (ping-pong)
-let trTex = [], trFbo = [], trPing = 0;      // mapa feromonu (ping-pong)
-let SIM = [1, 1];                            // rozdzielczość mapy
+let agTex = [], agFbo = [], agPing = 0;      // agent textures (ping-pong)
+let trTex = [], trFbo = [], trPing = 0;      // pheromone map (ping-pong)
+let SIM = [1, 1];                            // map resolution
 
 const mouse = {x:0.5, y:0.5, f:0};
 
-// Agenci na piksel mapy. Klasyczny Physarum żyje w okolicy 0.10–0.20 — powyżej
-// ślad zlewa się w plamę, poniżej sieć nie ma z czego się utrzymać.
+// Agents per map pixel. Classic Physarum lives around 0.10-0.20: above that the
+// trail merges into a blot, below it the network has nothing to hold it up.
 const density = () => (AW * AW) / (SIM[0] * SIM[1]);
 function countForDensity(d){
   const target = d * SIM[0] * SIM[1];
   return COUNTS.reduce((b, c) => Math.abs(c.w*c.w - target) < Math.abs(b*b - target) ? c.w : b, COUNTS[0].w);
 }
 
-/* ── PRNG (mulberry32) — ten sam seed daje tę samą hodowlę ───────────────── */
+/* ── PRNG (mulberry32): the same seed gives the same culture ─────────────── */
 function rng(seed){
   let a = seed >>> 0;
   return function(){
@@ -439,7 +436,7 @@ function rng(seed){
   };
 }
 
-/* ── alokacja ────────────────────────────────────────────────────────────── */
+/* ── allocation ──────────────────────────────────────────────────────────── */
 function allocAgents(){
   for(const t of agTex) gl.deleteTexture(t);
   for(const f of agFbo) gl.deleteFramebuffer(f);
@@ -450,19 +447,19 @@ function allocAgents(){
   sow();
 }
 
-// Zasiew — wzór startowy zależy od hodowli, bo widać go jeszcze przez chwilę.
+// Sowing: the starting pattern depends on the culture, since it stays visible for a while.
 function sow(){
   const r = rng(SEED * 7919 + 13);
   const data = new Float32Array(AW * AW * 4);
   for(let i=0;i<AW*AW;i++){
     let x, y, a = r() * Math.PI * 2;
-    if(SOW === 0){                                   // szum
+    if(SOW === 0){                                   // noise
       x = r(); y = r();
-    } else if(SOW === 1){                            // pierścień, dziobami do środka
+    } else if(SOW === 1){                            // a ring, facing the centre
       const t = r()*Math.PI*2, rad = 0.34 + r()*0.05;
       x = 0.5 + Math.cos(t)*rad*(SIM[1]/SIM[0]); y = 0.5 + Math.sin(t)*rad;
       a = t + Math.PI + (r()-0.5)*0.7;
-    } else {                                         // wybuch ze środka
+    } else {                                         // a burst from the centre
       const t = r()*Math.PI*2, rad = Math.sqrt(r())*0.12;
       x = 0.5 + Math.cos(t)*rad*(SIM[1]/SIM[0]); y = 0.5 + Math.sin(t)*rad;
       a = t + (r()-0.5)*0.6;
@@ -499,11 +496,11 @@ function clearTrail(){
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-/* ── krok symulacji ──────────────────────────────────────────────────────── */
+/* ── simulation step ─────────────────────────────────────────────────────── */
 function step(){
   gl.disable(gl.BLEND);
 
-  // 1. agenci
+  // 1. agents
   gl.bindFramebuffer(gl.FRAMEBUFFER, agFbo[1 - agPing]);
   gl.viewport(0, 0, AW, AW);
   gl.useProgram(P_AGENT.p);
@@ -525,7 +522,7 @@ function step(){
   fullscreen();
   agPing = 1 - agPing;
 
-  // 2. depozyt feromonu — jeden punkt na agenta, blending addytywny
+  // 2. pheromone deposit: one point per agent, additive blending
   gl.bindFramebuffer(gl.FRAMEBUFFER, trFbo[trPing]);
   gl.viewport(0, 0, SIM[0], SIM[1]);
   gl.enable(gl.BLEND);
@@ -534,15 +531,15 @@ function step(){
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, agTex[agPing]);
   gl.uniform1i(P_DEPOSIT.u.u_agents, 0);
   gl.uniform1i(P_DEPOSIT.u.u_atexW, AW);
-  // Depozyt znormalizowany: stan ustalony piksela to deposit*gęstość/(1-zanik).
-  // Dzieląc przez ten czynnik sprawiamy, że suwak znaczy wprost „jasność śladu",
-  // niezależnie od liczby agentów, rozdzielczości mapy i tempa parowania.
+  // Normalised deposit: a pixel's steady state is deposit*density/(1-decay).
+  // Dividing by that factor makes the slider mean simply "trail brightness",
+  // whatever the agent count, map resolution and evaporation rate.
   gl.uniform1f(P_DEPOSIT.u.u_deposit, S.deposit * (1 - S.decay) / Math.max(density(), 0.01));
   gl.bindVertexArray(emptyVAO);
   gl.drawArrays(gl.POINTS, 0, AW * AW);
   gl.bindVertexArray(null);
 
-  // 2b. pędzel — kursor dokłada pokarm, żeby było w co celować
+  // 2b. brush: the cursor adds food, so there is something to aim for
   if(mouse.f > 0){
     gl.useProgram(P_BRUSH.p);
     gl.uniform2f(P_BRUSH.u.u_mouse, mouse.x, mouse.y);
@@ -555,7 +552,7 @@ function step(){
   }
   gl.disable(gl.BLEND);
 
-  // 3. dyfuzja + zanik
+  // 3. diffusion + decay
   gl.bindFramebuffer(gl.FRAMEBUFFER, trFbo[1 - trPing]);
   gl.useProgram(P_DIFFUSE.p);
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, trTex[trPing]);
@@ -586,7 +583,7 @@ function show(){
   fullscreen();
 }
 
-/* ── pętla ───────────────────────────────────────────────────────────────── */
+/* ── loop ────────────────────────────────────────────────────────────────── */
 let lastT = performance.now(), fps = 0, acc = 0, accN = 0;
 function frame(now){
   const dt = now - lastT; lastT = now;
@@ -602,12 +599,12 @@ function frame(now){
 
 function stats(){
   document.getElementById('stat').textContent =
-    `${fps.toFixed(0)} fps · ${(AW*AW/1e6).toFixed(2)} M agentów\n` +
-    `mapa ${SIM[0]}×${SIM[1]} · gęstość ${density().toFixed(2)}\n` +
-    `${S.steps} krok/kl.`;
+    `${fps.toFixed(0)} fps · ${(AW*AW/1e6).toFixed(2)} M agents\n` +
+    `map ${SIM[0]}×${SIM[1]} · density ${density().toFixed(2)}\n` +
+    `${S.steps} step/frame`;
 }
 
-/* ── kurator ─────────────────────────────────────────────────────────────── */
+/* ── curator ─────────────────────────────────────────────────────────────── */
 function applyGenus(seed, genus){
   const r = rng(seed);
   const g = GENERA[genus];
@@ -623,10 +620,19 @@ function applyGenus(seed, genus){
   AW = countForDensity(pick('dens'));
   SPECIES = r() < 0.45 ? 1 : (r() < 0.6 ? 3 : 2);
   S.cross = SPECIES > 1 ? +(-0.95 + r() * 1.15).toFixed(2) : 0;
-  PAL = Math.floor(r() * PALETTES.length);
+  // Amber (0) stays in the list, but the curator never rolls it: one palette fewer, the same
+  // number of draws, so every seed still gives the culture it always gave.
+  PAL = 1 + Math.floor(r() * (PALETTES.length - 1));
   S.exp  = +(1.6 + r() * 1.6).toFixed(2);
   S.glow = +(r() * 0.5).toFixed(2);
-  SOW = r() < 0.6 ? 0 : (r() < 0.5 ? 1 : 2);   // szum przeważa: pierścień i wybuch zostawiają pustki
+  SOW = r() < 0.6 ? 0 : (r() < 0.5 ? 1 : 2);   // noise is the most common: a ring and a burst leave empty space
+  // A ring or a burst packs the agents together, and they may never get out again: their own
+  // trail holds them and the colony collapses into a point (Spores #29 from a burst covers
+  // 0.2% of the screen, from noise 8%). Measured over 140 cultures: the burst collapsed even
+  // with two species, a ring only with one species or a slow kind. So the burst is gone, and
+  // a ring is left to fast kinds with several species, which push each other apart.
+  if(SOW === 2) SOW = 1;
+  if(SPECIES === 1 || g.speed[1] < 1.0) SOW = 0;
 }
 
 function newWorld(seed, genus){
@@ -634,17 +640,17 @@ function newWorld(seed, genus){
   GENUS = genus === undefined ? Math.floor(Math.random() * GENERA.length) : genus;
   const prevAW = AW;
   applyGenus(SEED, GENUS);
-  if(AW !== prevAW) allocAgents(); else sow();   // realokacja tekstur tylko gdy trzeba
+  if(AW !== prevAW) allocAgents(); else sow();   // reallocate textures only when needed
   clearTrail(); syncUI(); labelWorld(); stats();
 }
-function stepWorld(d){ newWorld(Math.max(1, SEED + d), GENUS); }   // sąsiedni seed, ten sam rodzaj
+function stepWorld(d){ newWorld(Math.max(1, SEED + d), GENUS); }   // the neighbouring seed, the same kind
 
 function labelWorld(){
   document.getElementById('world-id').textContent = `${GENERA[GENUS].n} #${SEED}`;
   document.getElementById('world-sub').textContent =
-    `${SPECIES} ${SPECIES === 1 ? 'gatunek' : (SPECIES < 5 ? 'gatunki' : 'gatunków')} · ` +
-    `paleta ${PALETTES[PAL].n} · ` +
-    (SPECIES > 1 ? (S.cross < -0.15 ? 'terytoria' : (S.cross > 0.15 ? 'symbioza' : 'obojętność')) : 'monokultura');
+    `${SPECIES} species · ` +
+    `palette ${PALETTES[PAL].n} · ` +
+    (SPECIES > 1 ? (S.cross < -0.15 ? 'territories' : (S.cross > 0.15 ? 'symbiosis' : 'indifference')) : 'monoculture');
 }
 
 /* ── UI ──────────────────────────────────────────────────────────────────── */
@@ -682,16 +688,16 @@ function syncUI(){
   selCount.value = AW; selPal.value = PAL; selQual.value = QUAL;
 }
 
-$('b-new').onclick   = () => { newWorld(); toast('nowa hodowla #' + SEED); };
+$('b-new').onclick   = () => { newWorld(); toast('new culture #' + SEED); };
 $('b-prev').onclick  = () => stepWorld(-1);
 $('b-next').onclick  = () => stepWorld(1);
-$('b-reset').onclick = () => { sow(); clearTrail(); toast('zasiane'); };
-$('b-clear').onclick = () => { clearTrail(); toast('ślad starty'); };
-$('b-pause').onclick = e => { paused = !paused; e.target.classList.toggle('on', paused); toast(paused ? 'pauza' : 'gra'); };
+$('b-reset').onclick = () => { sow(); clearTrail(); toast('reseeded'); };
+$('b-clear').onclick = () => { clearTrail(); toast('trail cleared'); };
+$('b-pause').onclick = e => { paused = !paused; e.target.classList.toggle('on', paused); toast(paused ? 'paused' : 'running'); };
 $('b-shot').onclick  = shot;
 $('b-disco').onclick = e => {
   disco = !disco; e.target.classList.toggle('on', disco);
-  discoT = performance.now() + 14000; toast(disco ? 'auto-cykl: co 14 s' : 'auto-cykl stop');
+  discoT = performance.now() + 14000; toast(disco ? 'auto-cycle: every 14 s' : 'auto-cycle off');
 };
 $('b-copy').onclick = () => {
   const q = new URLSearchParams({
@@ -701,8 +707,8 @@ $('b-copy').onclick = () => {
   });
   const url = location.origin + location.pathname + '?' + q;
   navigator.clipboard?.writeText(url).then(
-    () => toast('link w schowku'),
-    () => { history.replaceState(null, '', '?' + q); toast('link w pasku adresu'); });
+    () => toast('link copied'),
+    () => { history.replaceState(null, '', '?' + q); toast('link is in the address bar'); });
 };
 
 function loadFromURL(){
@@ -720,14 +726,14 @@ function loadFromURL(){
     if(v.length === 12 && v.every(x => isFinite(x))){
       [S.speed, S.sensAng, S.sensDist, S.turn, S.jitter, S.deposit, S.decay,
        S.diffuse, S.cross, S.exp, S.glow, S.steps] = v;
-      S.steps = Math.min(4, Math.max(1, Math.round(S.steps)));   // link z sieci nie zawiesi karty
+      S.steps = Math.min(4, Math.max(1, Math.round(S.steps)));   // a link from the web won't hang the tab
     }
   }
   return true;
 }
 
 function shot(){
-  show();                                   // świeża klatka pod eksport
+  show();                                   // a fresh frame for the export
   cvs.toBlob(b => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b);
@@ -735,7 +741,7 @@ function shot(){
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }, 'image/png');
-  toast('zapisano PNG');
+  toast('PNG saved');
 }
 
 let toastT;
@@ -744,12 +750,12 @@ function toast(msg){
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1400);
 }
 
-/* ── wejście ─────────────────────────────────────────────────────────────── */
+/* ── input ───────────────────────────────────────────────────────────────── */
 function toWorld(e){
   const p = e.touches ? e.touches[0] : e;
   const r = cvs.getBoundingClientRect();
   mouse.x = (p.clientX - r.left) / r.width;
-  mouse.y = 1 - (p.clientY - r.top) / r.height;      // GL ma Y do góry
+  mouse.y = 1 - (p.clientY - r.top) / r.height;      // GL has Y pointing up
 }
 cvs.addEventListener('pointerdown', e => { toWorld(e); mouse.f = e.shiftKey ? -1 : 1; cvs.setPointerCapture(e.pointerId); });
 cvs.addEventListener('pointermove', e => { if(mouse.f) toWorld(e); });
@@ -776,10 +782,10 @@ let rsz;
 addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { allocTrail(); sow(); stats(); }, 180); });
 
 /* ── start ───────────────────────────────────────────────────────────────── */
-allocTrail();                       // najpierw mapa: dobór populacji zależy od jej rozmiaru
+allocTrail();                       // the map first: the population is chosen from its size
 const q0 = QUAL;
 const fromURL = loadFromURL();
-if(QUAL !== q0) allocTrail();       // link mógł zażyczyć sobie innej rozdzielczości
+if(QUAL !== q0) allocTrail();       // the link may have asked for another resolution
 if(!fromURL){ SEED = Math.floor(Math.random()*1e6)+1; GENUS = 0; applyGenus(SEED, GENUS); }
 allocAgents();
 syncUI(); labelWorld(); stats();

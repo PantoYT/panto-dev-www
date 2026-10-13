@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Particle Life GPU — życie na 3060</title>
+<title>Particle Life GPU</title>
 <style>
   :root{--bg:#05060a;--panel:#0f121b;--edge:#20263a;--ink:#e7eaf3;--dim:#7f889e;--accent:#7c8cff}
   *{box-sizing:border-box}
@@ -48,8 +48,6 @@
   #stat{position:fixed;bottom:12px;right:14px;color:var(--dim);font:11px/1.4 ui-monospace,monospace;
     background:color-mix(in srgb,var(--panel) 85%,transparent);border:1px solid var(--edge);border-radius:8px;
     padding:7px 10px;pointer-events:none;text-align:right;white-space:pre}
-  #tag{position:fixed;bottom:12px;left:14px;color:var(--dim);font-size:11px;pointer-events:none}
-  #tag b{color:var(--accent)}
   #err{position:fixed;inset:auto 14px 14px 14px;max-height:60vh;overflow:auto;background:#1a0e12;
     border:1px solid #5a2230;border-radius:10px;padding:14px;color:#ffb4b4;font:12px/1.5 ui-monospace,monospace;
     white-space:pre-wrap;display:none;z-index:9}
@@ -64,80 +62,79 @@
 <div id="hud">
   <h1>Particle&nbsp;Life&nbsp;·&nbsp;GPU</h1>
   <div class="world">
-    <span class="id" id="world-id">Świat #—</span>
+    <span class="id" id="world-id">World #—</span>
     <span class="mini">
-      <button id="b-prev" title="poprzedni">‹</button>
-      <button id="b-next" title="następny">›</button>
+      <button id="b-prev" title="previous">‹</button>
+      <button id="b-next" title="next">›</button>
     </span>
   </div>
-  <p class="sub" id="world-sub">WebGL2 GPGPU — symulacja liczy się na karcie.</p>
+  <p class="sub" id="world-sub">WebGL2 GPGPU: the simulation runs on the graphics card.</p>
 
-  <button id="b-new" class="pri wide">✦ Nowy świat (kurator)</button>
+  <button id="b-new" class="pri wide">✦ New world (curator)</button>
   <div class="btns" style="margin-top:7px">
-    <button id="b-disco">Auto-cykl</button>
-    <button id="b-copy">Kopiuj link</button>
+    <button id="b-disco">Auto-cycle</button>
+    <button id="b-copy">Copy link</button>
   </div>
 
   <div class="grp"></div>
-  <div class="grp-t">Świat</div>
-  <div class="row"><label>Styl</label><select id="sel-style"></select></div>
-  <div class="row"><label>Typy</label><input id="s-types" type="range" min="3" max="8" step="1"><output id="o-types"></output></div>
-  <div class="row"><label>Cząstki</label><select id="sel-count"></select></div>
+  <div class="grp-t">World</div>
+  <div class="row"><label>Style</label><select id="sel-style"></select></div>
+  <div class="row"><label>Types</label><input id="s-types" type="range" min="3" max="8" step="1"><output id="o-types"></output></div>
+  <div class="row"><label>Particles</label><select id="sel-count"></select></div>
 
   <div class="grp"></div>
-  <div class="grp-t">Fizyka</div>
-  <div class="row chk"><label for="c-autor">Auto-zasięg (gęstość)</label><input type="checkbox" id="c-autor" checked></div>
-  <div class="row"><label>Zasięg</label><input id="s-rmax" type="range" min="0.015" max="0.14" step="0.001"><output id="o-rmax"></output></div>
-  <div class="row"><label>Siła</label><input id="s-force" type="range" min="0.1" max="6" step="0.05"><output id="o-force"></output></div>
-  <div class="row"><label>Tarcie</label><input id="s-fric" type="range" min="0.05" max="1.2" step="0.01"><output id="o-fric"></output></div>
-  <div class="row"><label>Rdzeń β</label><input id="s-beta" type="range" min="0.05" max="0.5" step="0.01"><output id="o-beta"></output></div>
+  <div class="grp-t">Physics</div>
+  <div class="row chk"><label for="c-autor">Auto range (density)</label><input type="checkbox" id="c-autor" checked></div>
+  <div class="row"><label>Range</label><input id="s-rmax" type="range" min="0.015" max="0.14" step="0.001"><output id="o-rmax"></output></div>
+  <div class="row"><label>Force</label><input id="s-force" type="range" min="0.1" max="6" step="0.05"><output id="o-force"></output></div>
+  <div class="row"><label>Friction</label><input id="s-fric" type="range" min="0.05" max="1.2" step="0.01"><output id="o-fric"></output></div>
+  <div class="row"><label>Core β</label><input id="s-beta" type="range" min="0.05" max="0.5" step="0.01"><output id="o-beta"></output></div>
 
   <div class="grp"></div>
-  <div class="grp-t">Wygląd</div>
-  <div class="row"><label>Smugi</label><input id="s-trail" type="range" min="0" max="0.985" step="0.005"><output id="o-trail"></output></div>
+  <div class="grp-t">Look</div>
+  <div class="row"><label>Trails</label><input id="s-trail" type="range" min="0" max="0.985" step="0.005"><output id="o-trail"></output></div>
   <div class="row"><label>Bloom</label><input id="s-bloom" type="range" min="0" max="2.5" step="0.05"><output id="o-bloom"></output></div>
-  <div class="row"><label>Punkt</label><input id="s-size" type="range" min="1" max="7" step="0.5"><output id="o-size"></output></div>
-  <div class="row"><label>Ekspozycja</label><input id="s-exp" type="range" min="0.4" max="3" step="0.05"><output id="o-exp"></output></div>
+  <div class="row"><label>Point</label><input id="s-size" type="range" min="1" max="7" step="0.5"><output id="o-size"></output></div>
+  <div class="row"><label>Exposure</label><input id="s-exp" type="range" min="0.4" max="3" step="0.05"><output id="o-exp"></output></div>
 
   <div class="btns">
-    <button id="b-harm">Harmonia (auto-stroj)</button>
-    <button id="b-reset">Rozrzuć</button>
-    <button id="b-pause">Pauza</button>
-    <button id="b-shot">Zrzut PNG</button>
+    <button id="b-harm">Harmony (auto-tune)</button>
+    <button id="b-reset">Scatter</button>
+    <button id="b-pause">Pause</button>
+    <button id="b-shot">Save PNG</button>
   </div>
-  <canvas id="mtx" class="mtx" width="160" height="160" title="klik = edytuj komórkę macierzy"></canvas>
+  <canvas id="mtx" class="mtx" width="160" height="160" title="click to edit a cell of the matrix"></canvas>
 
   <p class="foot">
-    Klik/dotyk = grawitacja (Shift = odpych).<br>
-    <kbd>H</kbd> panel · <kbd>Spacja</kbd> pauza · <kbd>N</kbd> nowy świat ·
-    <kbd>←</kbd><kbd>→</kbd> światy · <kbd>D</kbd> auto-cykl · <kbd>R</kbd> rozrzuć · <kbd>S</kbd> zrzut
+    Click / touch = gravity (Shift pushes).<br>
+    <kbd>H</kbd> panel · <kbd>Space</kbd> pause · <kbd>N</kbd> new world ·
+    <kbd>←</kbd><kbd>→</kbd> worlds · <kbd>D</kbd> auto-cycle · <kbd>R</kbd> scatter · <kbd>S</kbd> save PNG
   </p>
 </div>
 
 <div id="stat">—</div>
-<div id="tag">dla <b>Panto</b> · RTX-ready</div>
 <div id="err"></div>
 <div class="toast" id="toast"></div>
 
 <script>
 "use strict";
 /* ══════════════════════════════════════════════════════════════════════════
-   Particle Life — WebGL2 GPGPU (wersja „11/10")
-   Fizyka na GPU (RGBA32F ping-pong), render HDR z feedbackiem + bloom + ACES.
-   Nowość vs. poprzednia: reprodukowalne światy (seed), kurator ciekawych macierzy,
-   płynny morfing reguł bez resetu cząstek, auto-zasięg wg gęstości, style, auto-cykl.
+   Particle Life, WebGL2 GPGPU.
+   Physics on the GPU (RGBA32F ping-pong), HDR render with feedback + bloom + ACES.
+   Over the CPU version: reproducible worlds (seed), a curator of interesting matrices,
+   rules that morph smoothly without resetting particles, auto range by density, styles, auto-cycle.
    ══════════════════════════════════════════════════════════════════════════ */
 
 const cvs = document.getElementById('gl');
 const gl = cvs.getContext('webgl2', {antialias:false, alpha:false, premultipliedAlpha:false});
 const errBox = document.getElementById('err');
-function fatal(msg){ errBox.style.display='block'; errBox.textContent = 'BŁĄD:\n'+msg; throw new Error(msg); }
-if(!gl) fatal('Brak WebGL2. Użyj Chrome/Firefox z włączonym GPU.');
+function fatal(msg){ errBox.style.display='block'; errBox.textContent = 'ERROR:\n'+msg; throw new Error(msg); }
+if(!gl) fatal('No WebGL2. Use Chrome or Firefox with the GPU enabled.');
 if(!gl.getExtension('EXT_color_buffer_float'))
-  fatal('Brak EXT_color_buffer_float — karta/przeglądarka nie renderuje do tekstur float.');
+  fatal('No EXT_color_buffer_float: this card or browser cannot render to float textures.');
 gl.getExtension('OES_texture_float_linear');
 
-/* ── kompilacja ─────────────────────────────────────────────────────────── */
+/* ── compiling ──────────────────────────────────────────────────────────── */
 function sh(type, src){
   const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
   if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))
@@ -155,7 +152,7 @@ const VERT_FS = `#version 300 es
 out vec2 uv;
 void main(){ vec2 p=vec2(float((gl_VertexID<<1)&2), float(gl_VertexID&2)); uv=p; gl_Position=vec4(p*2.0-1.0,0.0,1.0); }`;
 
-/* paleta typów — złoty kąt dla rozróżnialności, wysoka saturacja */
+/* type palette: golden angle so types stay distinct, high saturation */
 const PALETTE_GLSL = `
 vec3 hue(float h){ vec3 k=vec3(1.0,2.0/3.0,1.0/3.0); vec3 p=abs(fract(vec3(h)+k)*6.0-3.0); return clamp(p-1.0,0.0,1.0); }
 vec3 typeColor(float t, float nT){ float h=fract(t*0.61803399+0.04); return 0.12+0.95*hue(h); }`;
@@ -212,7 +209,7 @@ void main(){
   float sp=length(s.zw);
   gl_PointSize=uPointSize*(1.0+min(sp*1.4,1.3));
   float t=texelFetch(typeTex,c,0).r;
-  vCol=typeColor(t,uTypes)*(0.55+min(sp*2.6,1.7));   // szybkie = jaśniejsze (rdzeń bieli)
+  vCol=typeColor(t,uTypes)*(0.55+min(sp*2.6,1.7));   // faster = brighter (white core)
 }`;
 const FRAG_POINTS = `#version 300 es
 precision highp float; in vec3 vCol; out vec4 o;
@@ -243,7 +240,7 @@ vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0
 void main(){
   vec3 c=texture(scene,uv).rgb + texture(bloom,uv).rgb*uBloom;
   c=aces(c*uExposure);
-  vec2 q=uv-0.5; float vig=smoothstep(1.05,0.3,length(q)*1.15);   // delikatna winieta
+  vec2 q=uv-0.5; float vig=smoothstep(1.05,0.3,length(q)*1.15);   // a soft vignette
   c*=mix(0.72,1.0,vig);
   o=vec4(pow(c,vec3(1.0/2.2)),1.0);
 }`;
@@ -254,7 +251,7 @@ const P = {
   blur:program(VERT_FS,FRAG_BLUR), comp:program(VERT_FS,FRAG_COMPOSITE),
 };
 
-/* ── zasoby GPU ─────────────────────────────────────────────────────────── */
+/* ── GPU resources ──────────────────────────────────────────────────────── */
 const vao=gl.createVertexArray(); gl.bindVertexArray(vao);
 function tex(w,h,internal,format,type,data,filter){
   const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
@@ -271,7 +268,7 @@ function fbo(t){ const f=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFF
 
 let TW=128,TH=128,N=TW*TH,TYPES=6;
 let posA,posB,fboA,fboB,typeTex;
-const MATRIX=new Float32Array(64), MTARGET=new Float32Array(64);   // aktualna + docelowa (morfing)
+const MATRIX=new Float32Array(64), MTARGET=new Float32Array(64);   // current + target (morphing)
 
 function aspect(){ return innerWidth/innerHeight; }
 
@@ -290,50 +287,50 @@ function reseed(){
   gl.bindTexture(gl.TEXTURE_2D,typeTex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,TW,TH,0,gl.RGBA,gl.FLOAT,typ);
   clearAccum();
 }
-function reassignTypes(){ // zmiana liczby typów bez rozrzucania pozycji
+function reassignTypes(){ // change the number of types without scattering positions
   const typ=new Float32Array(N*4); for(let i=0;i<N;i++) typ[i*4]=(Math.random()*TYPES)|0;
   gl.bindTexture(gl.TEXTURE_2D,typeTex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,TW,TH,0,gl.RGBA,gl.FLOAT,typ);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   ŚWIATY — seed + kurator (deterministyczne, reprodukowalne, node-testowalne)
+   WORLDS: seed + curator (deterministic, reproducible, testable in node)
    ══════════════════════════════════════════════════════════════════════════ */
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
   t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
-const STYLES=["chaos","pościg","komórki","sieć","symetria"];
+const STYLES=["chaos","chase","cells","web","symmetry"];
 
 function genMatrix(seed, types, style){
   const rng=mulberry32(seed>>>0), M=new Float32Array(64), rnd=()=>rng()*2-1;
   for(let i=0;i<types;i++) for(let j=0;j<types;j++) M[i*types+j]=rnd();
-  if(style==="pościg"){
+  if(style==="chase"){
     for(let i=0;i<types;i++){ M[i*types+i]=0.25+rng()*0.5;
       M[i*types+((i+1)%types)]=0.6+rng()*0.4; M[i*types+((i-1+types)%types)]=-(0.6+rng()*0.4); }
-  } else if(style==="komórki"){
+  } else if(style==="cells"){
     for(let i=0;i<types;i++) for(let j=0;j<types;j++) M[i*types+j]= i===j? 0.55+rng()*0.45 : -0.15-rng()*0.55;
-  } else if(style==="sieć"){
+  } else if(style==="web"){
     for(let i=0;i<types;i++) for(let j=0;j<types;j++) M[i*types+j]= (((i+j)&1)?-1:1)*(0.35+rng()*0.55);
-  } else if(style==="symetria"){
+  } else if(style==="symmetry"){
     for(let i=0;i<types;i++){ for(let j=0;j<i;j++){ const v=rnd(); M[i*types+j]=v; M[j*types+i]=v; } M[i*types+i]=rnd(); }
-  } else { // chaos: łagodna kohezja na diagonali, żeby nie był to czysty gaz
+  } else { // chaos: mild cohesion on the diagonal, so it isn't pure gas
     for(let i=0;i<types;i++) M[i*types+i]=0.15+rng()*0.6;
   }
   return M;
 }
 
-/* ocena „ciekawości": chcemy współistnienia przyciągania i odpychania,
-   przyzwoitej wariancji i braku dominującego znaku (unikamy gazu i jednej kuli) */
+/* an "interest" score: attraction and repulsion together,
+   decent variance and no dominant sign (avoids a gas and a single ball) */
 function scoreMatrix(M, types){
   let sum=0,sq=0,pos=0,neg=0; const n=types*types;
   for(let k=0;k<n;k++){ const v=M[k]; sum+=v; sq+=v*v; if(v>0.15)pos++; else if(v<-0.15)neg++; }
   const mean=sum/n, varr=sq/n-mean*mean;
   let s=varr;
-  s*= (pos>0&&neg>0)?1.35:0.45;              // oba znaki obecne
-  s*= (Math.abs(mean)<0.28)?1.2:0.65;         // nie zdominowany znak
+  s*= (pos>0&&neg>0)?1.35:0.45;              // both signs present
+  s*= (Math.abs(mean)<0.28)?1.2:0.65;         // no dominant sign
   s*= (pos>=types*0.5 && neg>=types*0.5)?1.15:0.9;
   return s;
 }
-/* dobiera seed dający ciekawy świat dla danego stylu/typów */
+/* picks a seed that gives an interesting world for this style and type count */
 function discoverSeed(style, types, tries=48){
   let best=null, bestS=-1, start=(Math.random()*0xffffffff)>>>0;
   for(let k=0;k<tries;k++){ const seed=(start+k*2654435761)>>>0;
@@ -348,26 +345,26 @@ function applyWorld(w, morph){
   MTARGET.set(M);
   if(!morph){ MATRIX.set(M); }
   drawMatrix();
-  document.getElementById('world-id').textContent='Świat #'+w.seed;
-  document.getElementById('world-sub').textContent='Styl: '+w.style+' · '+w.types+' typów';
+  document.getElementById('world-id').textContent='World #'+w.seed;
+  document.getElementById('world-sub').textContent='Style: '+w.style+' · '+w.types+' types';
 }
 function newWorld(style){
   const st = style || STYLES[(Math.random()*STYLES.length)|0];
   WORLD={seed:discoverSeed(st,TYPES), types:TYPES, style:st};
   document.getElementById('sel-style').value=st;
-  applyWorld(WORLD, true);          // morfuj, nie resetuj cząstek
+  applyWorld(WORLD, true);          // morph, don't reset the particles
 }
-function stepWorld(dir){            // ± po seedach tego samego stylu
+function stepWorld(dir){            // step through seeds of the same style
   WORLD.seed=(WORLD.seed+dir)>>>0; applyWorld(WORLD, true);
 }
 
-/* ── auto-zasięg wg gęstości: stała oczekiwana liczba sąsiadów ──────────── */
+/* ── auto range by density: a constant expected number of neighbours ───── */
 let autoR=true;
 function suggestRMax(){ const d=N/aspect(); return Math.min(0.14, Math.max(0.015, Math.sqrt(26/(d*Math.PI)))); }
 function applyAutoR(){ if(!autoR) return; S.rmax=suggestRMax();
   const s=document.getElementById('s-rmax'), o=document.getElementById('o-rmax'); s.value=S.rmax; o.textContent=S.rmax.toFixed(3); }
 
-/* ── bufory ekranu (HDR + bloom) ────────────────────────────────────────── */
+/* ── screen buffers (HDR + bloom) ───────────────────────────────────────── */
 let RW,RH,BW,BH, accumA,accumB,fAccA,fAccB, brightT,fBright, blur1,fBlur1, blur2,fBlur2;
 function allocScreen(){
   const dpr=Math.min(devicePixelRatio||1,1.5);
@@ -386,22 +383,22 @@ function clearAccum(){ for(const f of [fAccA,fAccB]){ gl.bindFramebuffer(gl.FRAM
 function fullscreen(prog,target,tw,th){ gl.bindFramebuffer(gl.FRAMEBUFFER,target); gl.viewport(0,0,tw,th); gl.useProgram(prog); gl.disable(gl.BLEND); }
 function bindTex(u,t){ gl.activeTexture(gl.TEXTURE0+u); gl.bindTexture(gl.TEXTURE_2D,t); }
 
-/* ── parametry ──────────────────────────────────────────────────────────── */
+/* ── parameters ─────────────────────────────────────────────────────────── */
 const S={ rmax:0.05, force:1.4, fric:0.30, beta:0.30, trail:0.90, bloom:1.2, size:3, exp:1.35 };
 let paused=false, disco=false, discoT=0;
 const mouse={x:0,y:0,mode:0};
 
-/* ── pętla ──────────────────────────────────────────────────────────────── */
+/* ── loop ───────────────────────────────────────────────────────────────── */
 let last=performance.now(), accT=0, accN=0, fpsShown=0;
 function frame(now){
   const raw=(now-last)/1000; last=now; const dt=Math.min(raw,0.033)*60;
-  // morfing macierzy → płynne przejścia reguł
+  // morph the matrix: rules change smoothly
   for(let k=0;k<64;k++) MATRIX[k]+=(MTARGET[k]-MATRIX[k])*0.05;
   if(disco){ discoT+=raw; if(discoT>18){ discoT=0; newWorld(); } }
   if(!paused){ simulate(dt); renderScene(); }
   accN++; accT+=raw;
   if(accT>=0.4){ fpsShown=Math.round(accN/accT);
-    document.getElementById('stat').textContent=fpsShown+' fps\n'+N.toLocaleString('pl')+' cząstek\n'+TYPES+' typów'; accN=0; accT=0; }
+    document.getElementById('stat').textContent=fpsShown+' fps\n'+N.toLocaleString('en')+' particles\n'+TYPES+' types'; accN=0; accT=0; }
   requestAnimationFrame(frame);
 }
 function simulate(dt){
@@ -432,7 +429,7 @@ function renderScene(){
   [accumA,accumB]=[accumB,accumA]; [fAccA,fAccB]=[fAccB,fAccA];
 }
 
-/* ── heatmapa macierzy ──────────────────────────────────────────────────── */
+/* ── matrix heat map ─────────────────────────────────────────────────────── */
 const mtx=document.getElementById('mtx');
 function drawMatrix(){
   const g=mtx.getContext('2d'), S2=160, c=S2/TYPES; mtx.width=S2; mtx.height=S2; g.clearRect(0,0,S2,S2);
@@ -456,12 +453,12 @@ function toast(m){ toastEl.textContent=m; toastEl.classList.add('show'); clearTi
 
 const selStyle=document.getElementById('sel-style');
 STYLES.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; selStyle.appendChild(o); });
-selStyle.onchange=()=>{ WORLD.style=selStyle.value; WORLD.seed=discoverSeed(WORLD.style,TYPES); applyWorld(WORLD,true); toast('styl: '+WORLD.style); };
+selStyle.onchange=()=>{ WORLD.style=selStyle.value; WORLD.seed=discoverSeed(WORLD.style,TYPES); applyWorld(WORLD,true); toast('style: '+WORLD.style); };
 
-const COUNTS=[[64,'4 tys.'],[96,'9 tys.'],[128,'16 tys.'],[160,'26 tys.'],[192,'37 tys.'],[224,'50 tys.'],[256,'65 tys.']];
+const COUNTS=[[64,'4k'],[96,'9k'],[128,'16k'],[160,'26k'],[192,'37k'],[224,'50k'],[256,'65k']];
 const selCount=document.getElementById('sel-count');
-COUNTS.forEach(([s,l])=>{ const o=document.createElement('option'); o.value=s; o.textContent=l+' cząstek'; if(s===TW)o.selected=true; selCount.appendChild(o); });
-selCount.onchange=()=>{ TW=TH=parseInt(selCount.value); initParticles(); applyAutoR(); clearAccum(); toast(N.toLocaleString('pl')+' cząstek'); };
+COUNTS.forEach(([s,l])=>{ const o=document.createElement('option'); o.value=s; o.textContent=l+' particles'; if(s===TW)o.selected=true; selCount.appendChild(o); });
+selCount.onchange=()=>{ TW=TH=parseInt(selCount.value); initParticles(); applyAutoR(); clearAccum(); toast(N.toLocaleString('en')+' particles'); };
 
 const sTypes=document.getElementById('s-types'), oTypes=document.getElementById('o-types');
 sTypes.value=TYPES; oTypes.textContent=TYPES;
@@ -474,33 +471,33 @@ const sRmax=slider('rmax','rmax',v=>v.toFixed(3),()=>{ autoR=false; document.get
 slider('force','force',v=>v.toFixed(2)); slider('fric','fric',v=>v.toFixed(2)); slider('beta','beta',v=>v.toFixed(2));
 slider('trail','trail',v=>v.toFixed(2)); slider('bloom','bloom',v=>v.toFixed(2)); slider('size','size',v=>v.toFixed(1)); slider('exp','exp',v=>v.toFixed(2));
 
-document.getElementById('c-autor').onchange=e=>{ autoR=e.target.checked; sRmax.disabled=autoR; if(autoR){ applyAutoR(); toast('auto-zasięg'); } };
+document.getElementById('c-autor').onchange=e=>{ autoR=e.target.checked; sRmax.disabled=autoR; if(autoR){ applyAutoR(); toast('auto range'); } };
 
-document.getElementById('b-new').onclick=()=>{ newWorld(); toast('nowy świat #'+WORLD.seed); };
+document.getElementById('b-new').onclick=()=>{ newWorld(); toast('new world #'+WORLD.seed); };
 document.getElementById('b-prev').onclick=()=>{ stepWorld(-1); };
 document.getElementById('b-next').onclick=()=>{ stepWorld(1); };
-document.getElementById('b-disco').onclick=e=>{ disco=!disco; discoT=0; e.target.classList.toggle('on',disco); toast(disco?'auto-cykl ON':'auto-cykl OFF'); };
-document.getElementById('b-harm').onclick=()=>{ harmonize(); toast('auto-strojenie'); };
-document.getElementById('b-reset').onclick=()=>{ reseed(); toast('rozrzucono'); };
-document.getElementById('b-pause').onclick=()=>{ paused=!paused; toast(paused?'pauza':'gra'); };
+document.getElementById('b-disco').onclick=e=>{ disco=!disco; discoT=0; e.target.classList.toggle('on',disco); toast(disco?'auto-cycle on':'auto-cycle off'); };
+document.getElementById('b-harm').onclick=()=>{ harmonize(); toast('auto-tuned'); };
+document.getElementById('b-reset').onclick=()=>{ reseed(); toast('scattered'); };
+document.getElementById('b-pause').onclick=()=>{ paused=!paused; toast(paused?'paused':'running'); };
 document.getElementById('b-shot').onclick=shot;
 document.getElementById('b-copy').onclick=copyLink;
 
-/* auto-strojenie: siła/tarcie/β do stabilnego, żywego reżimu wzgl. zasięgu */
+/* auto-tune: force, friction and β into a stable, lively regime for the range */
 function harmonize(){
   S.force=1.6; S.fric=0.30; S.beta=0.30; if(autoR) applyAutoR();
   for(const [id,key] of [['force','force'],['fric','fric'],['beta','beta']]){
     const s=document.getElementById('s-'+id), o=document.getElementById('o-'+id); s.value=S[key]; o.textContent=S[key].toFixed(2); }
 }
 
-function shot(){ const a=document.createElement('a'); a.download='particle-life-'+WORLD.seed+'.png'; a.href=cvs.toDataURL('image/png'); a.click(); toast('PNG zapisany'); }
+function shot(){ const a=document.createElement('a'); a.download='particle-life-'+WORLD.seed+'.png'; a.href=cvs.toDataURL('image/png'); a.click(); toast('PNG saved'); }
 
 function copyLink(){
   const p=new URLSearchParams({ w:WORLD.seed, t:TYPES, s:STYLES.indexOf(WORLD.style), c:TW,
     rmax:S.rmax.toFixed(3), f:S.force, fr:S.fric, b:S.beta, tr:S.trail, bl:S.bloom, ex:S.exp, ar:autoR?1:0 });
   const url=location.origin+location.pathname+'?'+p.toString();
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject())
-    .then(()=>toast('link świata skopiowany')).catch(()=>{ prompt('Link świata:',url); });
+    .then(()=>toast('link to this world copied')).catch(()=>{ prompt('Link to this world:',url); });
 }
 function loadFromURL(){
   const p=new URLSearchParams(location.search); if(!p.has('w')) return false;
@@ -522,17 +519,17 @@ addEventListener('touchend',()=>mouse.mode=0);
 
 addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
   if(k==='h') document.getElementById('hud').classList.toggle('hide');
-  else if(k===' '){ paused=!paused; toast(paused?'pauza':'gra'); e.preventDefault(); }
-  else if(k==='n'){ newWorld(); toast('nowy świat #'+WORLD.seed); }
+  else if(k===' '){ paused=!paused; toast(paused?'paused':'running'); e.preventDefault(); }
+  else if(k==='n'){ newWorld(); toast('new world #'+WORLD.seed); }
   else if(e.key==='ArrowRight'){ stepWorld(1); }
   else if(e.key==='ArrowLeft'){ stepWorld(-1); }
   else if(k==='d'){ document.getElementById('b-disco').click(); }
-  else if(k==='r'){ reseed(); toast('rozrzucono'); }
+  else if(k==='r'){ reseed(); toast('scattered'); }
   else if(k==='s') shot();
 });
 let rsz; addEventListener('resize',()=>{ clearTimeout(rsz); rsz=setTimeout(allocScreen,150); });
 
-/* ── synchronizacja UI z parametrami (po ewentualnym load z URL) ─────────── */
+/* ── sync the UI with the parameters (after a load from the URL) ─────────── */
 function syncSliders(){
   for(const [id,key,dec] of [['rmax','rmax',3],['force','force',2],['fric','fric',2],['beta','beta',2],
     ['trail','trail',2],['bloom','bloom',2],['size','size',1],['exp','exp',2]]){
