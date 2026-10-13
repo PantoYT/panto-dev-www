@@ -12,9 +12,11 @@ index.html      the page: a fastfetch-style terminal in termwall's palettes (the
 privacy.html    served at /privacy
 terms.html      served at /terms
 404.html        served with status 404 for any unknown path (without it Pages answers 200)
-style.css       shared stylesheet, dark only, colors swapped by index.html
+style.css       shared stylesheet, dark only, colors swapped by theme.js
+theme.js        the theme picker and crt switch, shared by every page that has them
 fonts/          JetBrains Mono (SIL OFL), self-hosted
-demos/          self-contained project demos (snapshots, see below) and their preview images
+demos/          self-contained project demos (snapshots, see below) and their preview images;
+                demos/index.html is the page that lists them all, served at /demos/
 favicon.svg, apple-touch-icon.png, og.png, robots.txt, sitemap.xml
 ```
 

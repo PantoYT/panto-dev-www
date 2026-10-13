@@ -119,6 +119,12 @@ figcaption { color: var(--text); font-size: 13px; margin-top: 10px; }
 .frame.tubeyou { background-image: url(demos/tubeyou.jpg); }
 .frame.chip8 { background-image: url(demos/chip8.png); }
 .frame.sorting { background-image: url(demos/sorting.gif); }
+.frame.shot-termwall { background-image: url(demos/termwall.png); }
+.frame.shot-regexplode { background-image: url(demos/regexplode.png); }
+.frame.shot-physarum { background-image: url(demos/physarum.jpg); }
+.frame.shot-particle-life { background-image: url(demos/particle-life.jpg); }
+main > section > h1 { color: var(--accent); font-size: 22px; margin: 0 0 8px; }
+.lede { color: var(--text); margin: 0 0 28px; }
 
 .contact { max-width: 34rem; }
 

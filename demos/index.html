@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demos: panto-dev.com</title>
+<meta name="description" content="Everything of Panto's that runs in a browser: termwall, CHIP-8 Studio, TubeYou, a regex engine in slow motion, slime mould and particle life on the GPU.">
+<link rel="canonical" href="https://panto-dev.com/demos/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://panto-dev.com/demos/">
+<meta property="og:title" content="Demos: panto-dev.com">
+<meta property="og:description" content="termwall, CHIP-8 Studio, TubeYou, regexplode, physarum and particle life, running in the browser.">
+<meta property="og:image" content="https://panto-dev.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#171717">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="/">panto-dev.com</a>
+  <nav>
+    <a href="/#projects">projects</a>
+    <a href="/demos/" aria-current="page">demos</a>
+    <a href="/#contact">contact</a>
+  </nav>
+  <div class="controls">
+    <label>theme
+      <select id="theme" aria-label="Color theme"></select>
+    </label>
+    <label class="check"><input type="checkbox" id="crt"> crt</label>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <p class="prompt"><span class="k">panto@panto-dev</span>:<span class="t">~</span>$ ls ~/demos</p>
+  <h1>Demos</h1>
+  <p class="lede">Everything here runs in your browser, nothing to install.</p>
+  <div class="demos">
+    <figure>
+      <a class="frame shot-termwall" href="/demos/termwall/?demo&amp;distro=cycle"><span>termwall</span></a>
+      <figcaption>A live system-stats wallpaper for Wallpaper Engine and Lively, here with made-up stats.
+        Every setting works through the address, e.g. <code>?demo&amp;layout=board&amp;logo=arch</code>,
+        or <a href="/#tw-conf">configure it on the start page</a> and take the <code>termwall.toml</code> with you.</figcaption>
+    </figure>
+    <figure>
+      <a class="frame chip8" data-chip8 href="/demos/chip8/"><span>CHIP-8 Studio</span></a>
+      <figcaption>Emulator, assembler, disassembler and a debugger that steps back, in one offline HTML file.
+        Load a ROM, step through it, write your own. <a href="https://github.com/PantoYT/chip8-studio">repository</a></figcaption>
+    </figure>
+    <figure>
+      <a class="frame tubeyou" href="https://tubeyou.panto-dev.com"><span>TubeYou</span></a>
+      <figcaption>A video platform in PHP without a framework, live on the home server: upload, streaming over
+        range requests, comments, subscriptions. <a href="https://github.com/PantoYT/TubeYou">repository</a></figcaption>
+    </figure>
+    <figure>
+      <a class="frame shot-regexplode" href="/demos/regexplode/"><span>regexplode</span></a>
+      <figcaption>A regex engine written from zero with two matchers, backtracking and a Pike VM, side by side:
+        watch one blow up on input the other handles flat. Checked against the browser's own engine on
+        35,148 patterns and 46 inputs, 1.6 million comparisons, no difference.</figcaption>
+    </figure>
+    <figure>
+      <a class="frame shot-physarum" href="/demos/physarum/"><span>physarum</span></a>
+      <figcaption>Slime mould on the GPU: Jones' 2010 agent model, a quarter of a million agents, four WebGL2
+        passes a step. A curator grows seven kinds of culture; the link keeps the one you see. Interface in Polish.</figcaption>
+    </figure>
+    <figure>
+      <a class="frame shot-particle-life" href="/demos/particle-life/"><span>particle life</span></a>
+      <figcaption>A few kinds of particles and a table of who attracts whom. Nothing else is programmed, yet cells
+        and swarms form on their own. <a href="/demos/particle-life/gpu">GPU version</a> with up to 65,000 particles.
+        Interface in Polish.</figcaption>
+    </figure>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <a href="/privacy">privacy</a>
+  <a href="/terms">terms</a>
+  <a href="https://github.com/PantoYT/panto-dev-www">source of this page</a>
+</footer>
+
+<script src="/theme.js"></script>
+</body>
+</html>
