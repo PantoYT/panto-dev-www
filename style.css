@@ -108,7 +108,9 @@ figcaption { color: var(--text); font-size: 13px; margin-top: 10px; }
 .more { color: var(--text); margin: 18px 0 0; }
 
 /* demos */
-.demos { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; }
+/* at most three columns: six cards make 3 + 3, never 4 + 2 */
+.demos { display: grid; grid-template-columns: repeat(auto-fit, minmax(max(300px, calc((100% - 56px) / 3)), 1fr)); gap: 28px; }
+figcaption code { white-space: nowrap; }
 .demos figure { margin: 0; }
 .frame {
   display: flex; align-items: flex-end; aspect-ratio: 16 / 9; border: 1px solid var(--faint); border-radius: 4px;
