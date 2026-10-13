@@ -118,6 +118,7 @@ figcaption { color: var(--text); font-size: 13px; margin-top: 10px; }
 .frame:hover { border-color: var(--accent); }
 .frame.tubeyou { background-image: url(demos/tubeyou.jpg); }
 .frame.chip8 { background-image: url(demos/chip8.png); }
+.frame.sorting { background-image: url(demos/sorting.gif); }
 
 .contact { max-width: 34rem; }
 
